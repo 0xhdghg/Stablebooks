@@ -244,6 +244,81 @@ export type WebhookDeliveriesMeta = {
   delivered: number;
 };
 
+export type RuntimeReadiness = {
+  status: "ok" | "degraded";
+  service: string;
+  data: {
+    storage: {
+      storageMode: string;
+      arcEvidenceMirrorMode: string;
+      runtimeWriteModes: {
+        invoiceWriteMode: string;
+        paymentSessionWriteMode: string;
+        matchingWriteMode: string;
+        terminalPaymentWriteMode: string;
+        webhookWriteMode: string;
+      };
+      postgresBackedRuntimeReady: boolean;
+      hostedRuntimePolicy: {
+        hostedDetected: boolean;
+        platform: string | null;
+        storageMode: string;
+        runtimeWriteModes: {
+          invoiceWriteMode: string;
+          paymentSessionWriteMode: string;
+          matchingWriteMode: string;
+          terminalPaymentWriteMode: string;
+          webhookWriteMode: string;
+        };
+        postgresBackedRuntimeReady: boolean;
+        allowHostedJsonFallback: boolean;
+        enforcementEnabled: boolean;
+        policyOk: boolean;
+        reasons: string[];
+      };
+      jsonStoreActive: boolean;
+      postgres: {
+        configured: boolean;
+        reachable: boolean;
+        databaseName: string | null;
+        schemaName: string | null;
+        migrationCount: number;
+        lastAppliedAt: string | null;
+        latencyMs: number | null;
+        error: string | null;
+      };
+    };
+    arc: {
+      ready: boolean;
+      sourceKind: "rpc_polling" | "indexer_polling" | "webhook" | "fixtures";
+      missing: string[];
+      config: {
+        enabled: boolean;
+        sourceKind: "rpc_polling" | "indexer_polling" | "webhook" | "fixtures";
+        chainId: number | null;
+        pollIntervalMs: number | null;
+        confirmationsRequired: number | null;
+        startBlock: number | null;
+        sourceProfile: {
+          contractAddress: string | null;
+          eventSignature: string | null;
+          tokenSymbol: string | null;
+          tokenDecimals: number | null;
+        };
+        hasRpcUrl: boolean;
+        hasWebhookSecret: boolean;
+      };
+    };
+    outboundWebhook: {
+      configured: boolean;
+      mode: "configured" | "disabled";
+      destinationHost: string | null;
+      signingSecretConfigured: boolean;
+      maxAttempts: number;
+    };
+  };
+};
+
 type FetchOptions = {
   method?: "GET" | "POST";
   body?: unknown;
@@ -475,6 +550,10 @@ export async function replayPaymentWebhook(token: string, paymentId: string) {
     method: "POST",
     token
   });
+}
+
+export async function getRuntimeReadiness() {
+  return apiFetch<RuntimeReadiness["data"]>("/health/runtime");
 }
 
 export async function listWebhookDeliveries(

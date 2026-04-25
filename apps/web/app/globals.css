@@ -361,6 +361,20 @@ code {
   line-height: 1.65;
 }
 
+.dashboard-card .metric-list li,
+.info-card .metric-list li,
+.checklist .metric-list li {
+  padding: 10px 0;
+  border-top: 1px solid color-mix(in srgb, var(--border) 88%, white 12%);
+}
+
+.dashboard-card .metric-list li:first-child,
+.info-card .metric-list li:first-child,
+.checklist .metric-list li:first-child {
+  border-top: none;
+  padding-top: 0;
+}
+
 .check-item {
   display: flex;
   gap: 10px;
