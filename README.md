@@ -144,6 +144,17 @@ Recent engineering checkpoints:
   the split-brain bootstrap bug fixed during rehearsal.
 - [Day 19 acceptance](/G:/bugbounty/Stablebooks/docs/day-19-acceptance-note.md):
   accepted first hosted staging rehearsal on Railway.
+- [Day 20 plan](/G:/bugbounty/Stablebooks/docs/day-20-execution-plan.md):
+  repeated hosted staging hardening for bootstrap automation and remaining
+  auth/runtime split reduction.
+- [Day 20 auth/runtime split note](/G:/bugbounty/Stablebooks/docs/day-20-auth-runtime-split.md):
+  current remaining JSON-backed auth/session posture and the minimum safe next
+  migration target.
+- [Day 20 repeated staging runbook](/G:/bugbounty/Stablebooks/docs/day-20-repeated-staging-runbook.md):
+  lower-touch Railway staging repetition with bootstrap-only and one-command
+  hosted rehearsal helpers.
+- [Day 20 acceptance](/G:/bugbounty/Stablebooks/docs/day-20-acceptance-note.md):
+  accepted repeated staging hardening and full hosted rehearsal automation.
 - [Production env checklist](/G:/bugbounty/Stablebooks/docs/production-env-checklist.md):
   Postgres-backed runtime, Arc webhook-first config, outbound webhook config,
   smoke variables, and no-commit rules.
@@ -162,6 +173,6 @@ Recent engineering checkpoints:
 
 ## Next build steps
 
-1. Start Day 20: reduce manual staging setup and harden repeated hosted rehearsals.
-2. Automate staging bootstrap and smoke input collection.
-3. Reduce remaining JSON/auth split where it affects hosted operator lifecycle.
+1. Start Day 21: move operator auth persistence toward Prisma-backed storage.
+2. Reduce the remaining JSON/auth runtime split in `users`, `sessions`, and membership lookup.
+3. Keep the hosted staging path repeatable while shrinking bridge-only logic.

@@ -121,9 +121,11 @@ async function main() {
       {
         ok: true,
         invoiceId: invoice.data.id,
+        publicToken: invoice.data.publicToken,
         invoiceStatus: finalInvoice.data.status,
         paymentId: session.data.paymentId,
         paymentStatus: payment.data.status,
+        txHash: payment.data.txHash ?? null,
         matchResult: providerEvent.data.match.matchResult,
         providerDiagnostic: payment.data.providerDiagnostic,
         webhookDeliveryStatus: delivery.status

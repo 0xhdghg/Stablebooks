@@ -10,6 +10,8 @@
     "db:migrate:dev": "prisma migrate dev",
     "db:seed": "node prisma/seed.js",
     "seed:store": "node scripts/seed-dev-store.js",
+    "bootstrap:hosted-staging": "node scripts/bootstrap-hosted-staging.js",
+    "rehearsal:hosted-staging": "node scripts/run-hosted-staging-rehearsal.js",
     "smoke:arc-webhook": "node scripts/smoke-arc-webhook.js",
     "smoke:production-flow": "node scripts/smoke-production-flow.js",
     "lint": "echo \"No API lint config yet\"",
