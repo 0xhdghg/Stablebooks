@@ -53,6 +53,21 @@ Expected inbound header:
 
 - `x-arc-webhook-secret: <ARC_WEBHOOK_SECRET>`
 
+Circle Console webhooks use Circle signatures instead of the legacy shared
+secret header. For Circle Console delivery, Stablebooks expects:
+
+- `x-circle-key-id`
+- `x-circle-signature`
+
+and the API service needs:
+
+```env
+CIRCLE_API_KEY=<circle-api-key>
+```
+
+The `x-arc-webhook-secret` path remains available for hosted rehearsals and
+controlled manual smoke payloads.
+
 ### RPC polling
 
 Future mode. Do not use as the first production integration unless webhook
@@ -119,7 +134,14 @@ by provider, chain id, contract address, and event signature.
 `ARC_WEBHOOK_SECRET`
 
 - Required when `ARC_SOURCE_KIND=webhook`.
-- Used by the current API as the `x-arc-webhook-secret` header value.
+- Used by the legacy rehearsal path as the `x-arc-webhook-secret` header value.
+- Must come from deployment secret storage.
+- Must not be committed.
+
+`CIRCLE_API_KEY`
+
+- Required when receiving Circle Console signed webhooks directly.
+- Used to fetch Circle webhook public keys by `x-circle-key-id`.
 - Must come from deployment secret storage.
 - Must not be committed.
 
@@ -273,6 +295,7 @@ Current behavior:
 Never commit:
 
 - `ARC_WEBHOOK_SECRET`
+- `CIRCLE_API_KEY`
 - provider API keys
 - production `ARC_RPC_URL` values that contain API keys
 - private keys

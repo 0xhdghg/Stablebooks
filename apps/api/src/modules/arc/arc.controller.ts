@@ -6,10 +6,12 @@ import {
   Headers,
   Param,
   Post,
+  Req,
   UnauthorizedException
 } from "@nestjs/common";
 import { ArcAdapterService } from "./arc-adapter.service";
 import { ArcConfigService } from "./arc-config.service";
+import { CircleWebhookVerifierService } from "./circle-webhook-verifier.service";
 import { ArcEvidenceRepository } from "../storage/arc-evidence.repository";
 
 @Controller("arc")
@@ -17,6 +19,7 @@ export class ArcController {
   constructor(
     private readonly arcAdapter: ArcAdapterService,
     private readonly arcConfig: ArcConfigService,
+    private readonly circleWebhookVerifier: CircleWebhookVerifierService,
     private readonly arcEvidenceRepository: ArcEvidenceRepository
   ) {}
 
@@ -117,8 +120,24 @@ export class ArcController {
   @Post("webhooks/events")
   async ingestWebhookEvent(
     @Headers("x-arc-webhook-secret") webhookSecret: string | undefined,
+    @Headers("x-circle-key-id") circleKeyId: string | undefined,
+    @Headers("x-circle-signature") circleSignature: string | undefined,
+    @Req() request: { rawBody?: Buffer },
     @Body() body: unknown
   ) {
+    if (circleKeyId || circleSignature) {
+      this.assertWebhookRuntimeEnabled();
+      await this.circleWebhookVerifier.verifyOrThrow({
+        keyId: circleKeyId,
+        signature: circleSignature,
+        rawBody: request.rawBody
+      });
+
+      return {
+        data: await this.ingestCircleNotification(body)
+      };
+    }
+
     this.assertWebhookSecret(webhookSecret);
 
     return {
@@ -164,5 +183,52 @@ export class ArcController {
     if (webhookSecret !== config.webhookSecret) {
       throw new UnauthorizedException("Invalid Arc webhook secret.");
     }
+  }
+
+  private assertWebhookRuntimeEnabled() {
+    const config = this.arcConfig.getRuntimeConfig();
+
+    if (!config.enabled) {
+      throw new BadRequestException("Arc source is disabled.");
+    }
+
+    if (config.sourceKind !== "webhook") {
+      throw new BadRequestException(
+        "Arc source is not configured for webhook ingestion."
+      );
+    }
+  }
+
+  private async ingestCircleNotification(body: unknown) {
+    const notificationType = this.readCircleNotificationType(body);
+
+    if (notificationType === "webhooks.test") {
+      return {
+        accepted: true,
+        provider: "circle",
+        notificationType,
+        action: "acknowledged"
+      };
+    }
+
+    if (notificationType === "contracts.eventLog") {
+      return this.arcAdapter.ingestProviderEvent(body);
+    }
+
+    throw new BadRequestException({
+      message: "Unsupported Circle webhook notification type.",
+      rejectedReason: "unsupported_circle_notification_type",
+      notificationType
+    });
+  }
+
+  private readCircleNotificationType(body: unknown) {
+    if (!body || typeof body !== "object" || Array.isArray(body)) {
+      return null;
+    }
+
+    const notificationType = (body as { notificationType?: unknown })
+      .notificationType;
+    return typeof notificationType === "string" ? notificationType : null;
   }
 }

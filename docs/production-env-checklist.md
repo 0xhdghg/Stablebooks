@@ -168,13 +168,38 @@ ARC_EVENT_TOKEN_SYMBOL=USDC
 ARC_EVENT_TOKEN_DECIMALS=6
 ```
 
+For Circle Console webhooks, Stablebooks verifies Circle-signed notifications
+with:
+
+```env
+CIRCLE_API_KEY=<circle-api-key>
+```
+
+Circle sends:
+
+```text
+x-circle-key-id
+x-circle-signature
+```
+
+The older `x-arc-webhook-secret` path remains available for hosted rehearsals
+and controlled manual smoke payloads.
+
 ### Secrets
 
 `ARC_WEBHOOK_SECRET`
 
 - Secret.
-- Must come from deployment secret storage.
+- Must come from deployment secret storage when using the legacy
+  `x-arc-webhook-secret` rehearsal path.
 - Must not be reused as outbound Stablebooks webhook secret.
+- Must never be committed.
+
+`CIRCLE_API_KEY`
+
+- Secret.
+- Used to fetch Circle webhook public keys by `x-circle-key-id`.
+- Required when receiving Circle Console signed webhooks directly.
 - Must never be committed.
 
 ### Safe config
@@ -357,6 +382,7 @@ Never commit:
 
 - production `DATABASE_URL`
 - `ARC_WEBHOOK_SECRET`
+- `CIRCLE_API_KEY`
 - provider API keys
 - `ARC_RPC_URL` values containing API keys
 - private keys

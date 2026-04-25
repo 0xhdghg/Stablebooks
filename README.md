@@ -224,6 +224,13 @@ Recent engineering checkpoints:
   ownership, health checks, rollback checkpoints, and rehearsal worksheet.
 - [Day 27 acceptance](/G:/bugbounty/Stablebooks/docs/day-27-acceptance-note.md):
   accepted external dependency execution prep package.
+- [Day 28 plan](/G:/bugbounty/Stablebooks/docs/day-28-execution-plan.md):
+  Circle-signed webhook ingestion implementation.
+- [Day 28 Circle webhook ingestion](/G:/bugbounty/Stablebooks/docs/day-28-circle-webhook-ingestion.md):
+  Circle signature verification, test notification acknowledgement, eventLog
+  ingestion, and rehearsal compatibility.
+- [Day 28 acceptance](/G:/bugbounty/Stablebooks/docs/day-28-acceptance-note.md):
+  accepted Circle-signed webhook backend path.
 - [Production env checklist](/G:/bugbounty/Stablebooks/docs/production-env-checklist.md):
   Postgres-backed runtime, Arc webhook-first config, outbound webhook config,
   smoke variables, and no-commit rules.
@@ -243,7 +250,7 @@ Recent engineering checkpoints:
 ## Next build steps
 
 1. Treat Railway staging as the canonical MVP runtime baseline.
-2. Execute one Day 27 dependency packet at a time when the matching external
-   access is available.
-3. Prefer provider dependency execution first, then merchant webhook receiver,
-   then production domain and ops launch rehearsal.
+2. Deploy the Day 28 Circle-signed webhook backend path before switching Circle
+   Console away from webhook.site.
+3. After deploy, configure Circle API credentials in hosted secrets and run one
+   real Arc Testnet USDC transfer through Circle Event Monitoring.

@@ -1,4 +1,9 @@
 const { spawn } = require("node:child_process");
+const {
+  createPrivateKey,
+  createSign,
+  generateKeyPairSync
+} = require("node:crypto");
 const fs = require("node:fs/promises");
 const path = require("node:path");
 const { PrismaClient } = require("@prisma/client");
@@ -15,11 +20,22 @@ const finalizedTxHash =
   "0xregfinalized00000000000000000000000000000000000000000000000000000001";
 const failedTxHash =
   "0xregfailed0000000000000000000000000000000000000000000000000000000001";
+const circleSignedTxHash =
+  "0xregcircle000000000000000000000000000000000000000000000000000000001";
 const txHashes = [
   decodedProviderTxHash,
   finalizedTxHash,
-  failedTxHash
+  failedTxHash,
+  circleSignedTxHash
 ];
+const circleKeyId = "circle-regression-key";
+const circleKeys = generateKeyPairSync("ec", { namedCurve: "P-256" });
+const circlePublicKeyBase64 = circleKeys.publicKey
+  .export({ format: "der", type: "spki" })
+  .toString("base64");
+const circlePrivateKey = createPrivateKey(
+  circleKeys.privateKey.export({ format: "pem", type: "pkcs8" })
+);
 
 let apiProcess = null;
 
@@ -40,6 +56,7 @@ async function main() {
     await runReadinessRegression();
     await runProviderBoundaryRegression();
     await runProviderProfileValidationRegression();
+    await runCircleWebhookSignatureRegression();
 
     await runDecodedProviderPayloadRegression();
     await runFinalizedRegression();
@@ -57,6 +74,104 @@ async function main() {
     await prisma.$disconnect();
     await restoreStore();
   }
+}
+
+async function runCircleWebhookSignatureRegression() {
+  const testNotification = await postCircleSignedJson("/arc/webhooks/events", {
+    subscriptionId: "00000000-0000-0000-0000-000000000000",
+    notificationId: "00000000-0000-0000-0000-000000000000",
+    notificationType: "webhooks.test",
+    notification: { hello: "world" },
+    timestamp: "2026-04-25T11:47:45.178155989Z",
+    version: 2
+  });
+
+  assertEqual(
+    testNotification.data.accepted,
+    true,
+    "Circle test notification accepted"
+  );
+  assertEqual(
+    testNotification.data.action,
+    "acknowledged",
+    "Circle test notification action"
+  );
+
+  const invalidSignature = await postJsonExpectError(
+    "/arc/webhooks/events",
+    {
+      subscriptionId: "00000000-0000-0000-0000-000000000000",
+      notificationId: "00000000-0000-0000-0000-000000000001",
+      notificationType: "webhooks.test",
+      notification: { hello: "world" },
+      timestamp: "2026-04-25T11:48:45.178155989Z",
+      version: 2
+    },
+    {
+      "x-circle-key-id": circleKeyId,
+      "x-circle-signature": "invalid-signature"
+    },
+    401
+  );
+
+  assert(
+    JSON.stringify(invalidSignature).includes("Invalid Circle webhook signature"),
+    "Circle invalid signature is rejected"
+  );
+
+  const scenario = await createPayableScenario({
+    amountMinor: 90400,
+    memo: "Circle signed event regression invoice",
+    internalNote: "Temporary Circle signed regression"
+  });
+
+  const eventResponse = await postCircleSignedJson(
+    "/arc/webhooks/events",
+    buildCircleEventLogPayload({
+      txHash: circleSignedTxHash,
+      blockNumber: 504001,
+      confirmedAt: "2026-04-25T12:01:00.000Z",
+      amount: "904000000"
+    })
+  );
+
+  assertEqual(
+    eventResponse.data.providerBoundary.kind,
+    "circle_event_monitor",
+    "Circle signed event boundary kind"
+  );
+  assertEqual(
+    eventResponse.data.providerDiagnostic.sourceProfileMatched,
+    true,
+    "Circle signed event source profile matched"
+  );
+  assertEqual(
+    eventResponse.data.match.matchResult,
+    "exact",
+    "Circle signed event match result"
+  );
+  assertEqual(
+    eventResponse.data.payment.status,
+    "processing",
+    "Circle signed event processing status"
+  );
+
+  const finalityResponse = await postArcFinality({
+    txHash: circleSignedTxHash,
+    outcome: "finalized",
+    blockNumber: 504006,
+    confirmedAt: "2026-04-25T12:06:00.000Z",
+    settlementReference: "circle-regression-001"
+  });
+
+  assertEqual(
+    finalityResponse.data.payment.status,
+    "finalized",
+    "Circle signed event finalized payment status"
+  );
+
+  const invoice = await getAuthed(`/invoices/${scenario.invoiceId}`);
+  assertEqual(invoice.data.status, "paid", "Circle signed event invoice paid");
 }
 
 async function runReadinessRegression() {
@@ -630,6 +745,40 @@ function buildArcDecodedProviderPayload(input, overrides = {}) {
   };
 }
 
+function buildCircleEventLogPayload(input) {
+  return {
+    subscriptionId: "sub_circle_regression",
+    notificationId: "notif_circle_regression",
+    notificationType: "contracts.eventLog",
+    notification: {
+      blockchain: "ARC-TESTNET",
+      chainId: 777,
+      txHash: input.txHash,
+      blockHeight: input.blockNumber,
+      firstConfirmDate: input.confirmedAt,
+      contractAddress: "0x0000000000000000000000000000000000000001",
+      eventSignature: "Transfer(address,address,uint256)",
+      tokenSymbol: "USDC",
+      tokenDecimals: 6,
+      logIndex: 0,
+      topics: [
+        "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef"
+      ],
+      data: "0x",
+      decoded: {
+        from: "0x6666666666666666666666666666666666666666",
+        to: "0x1111111111111111111111111111111111111111",
+        amount: input.amount,
+        token: "USDC",
+        decimals: 6,
+        chainId: 777
+      }
+    },
+    timestamp: input.confirmedAt,
+    version: 2
+  };
+}
+
 async function postArcEvent(input) {
   return postJson(
     "/arc/webhooks/events",
@@ -699,6 +848,26 @@ async function postJson(pathname, body, headers = {}) {
   });
 }
 
+async function postCircleSignedJson(pathname, body) {
+  const serialized = JSON.stringify(body);
+  return request(pathname, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "x-circle-key-id": circleKeyId,
+      "x-circle-signature": signCirclePayload(serialized)
+    },
+    body: serialized
+  });
+}
+
+function signCirclePayload(serialized) {
+  const signer = createSign("SHA256");
+  signer.update(Buffer.from(serialized));
+  signer.end();
+  return signer.sign(circlePrivateKey).toString("base64");
+}
+
 async function postJsonExpectError(pathname, body, headers, expectedStatus) {
   const response = await fetch(`${baseUrl}${pathname}`, {
     method: "POST",
@@ -750,6 +919,9 @@ function startApi() {
       ARC_EVENT_SIGNATURE: "Transfer(address,address,uint256)",
       ARC_EVENT_TOKEN_SYMBOL: "USDC",
       ARC_EVENT_TOKEN_DECIMALS: "6",
+      CIRCLE_WEBHOOK_PUBLIC_KEYS_JSON: JSON.stringify({
+        [circleKeyId]: circlePublicKeyBase64
+      }),
       STABLEBOOKS_WEBHOOK_URL: ""
     },
     stdio: ["ignore", "pipe", "pipe"]
