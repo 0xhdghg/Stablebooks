@@ -196,6 +196,20 @@ Recent engineering checkpoints:
   accepted hosted staging/demo MVP baseline and documented non-blockers.
 - [Day 25 acceptance](/G:/bugbounty/Stablebooks/docs/day-25-acceptance-note.md):
   accepted Stablebooks as MVP-ready for staging/demo use.
+- [Day 26 plan](/G:/bugbounty/Stablebooks/docs/day-26-execution-plan.md):
+  post-MVP production launch prep.
+- [Day 26 production readiness gaps](/G:/bugbounty/Stablebooks/docs/day-26-production-readiness-gaps.md):
+  production blockers, non-blockers, and external launch dependencies.
+- [Day 26 Railway production checklist](/G:/bugbounty/Stablebooks/docs/day-26-railway-production-launch-checklist.md):
+  one-stack production launch checklist for API, Web, Postgres, env,
+  migrations, smoke, and rollback.
+- [Day 26 real Arc/Circle verification runbook](/G:/bugbounty/Stablebooks/docs/day-26-real-arc-circle-verification-runbook.md):
+  real provider-delivered payment verification path.
+- [Day 26 outbound webhook readiness](/G:/bugbounty/Stablebooks/docs/day-26-outbound-webhook-readiness.md):
+  production readiness criteria for merchant webhook delivery, retry,
+  dead-letter, and replay.
+- [Day 26 acceptance](/G:/bugbounty/Stablebooks/docs/day-26-acceptance-note.md):
+  accepted production launch prep package.
 - [Production env checklist](/G:/bugbounty/Stablebooks/docs/production-env-checklist.md):
   Postgres-backed runtime, Arc webhook-first config, outbound webhook config,
   smoke variables, and no-commit rules.
@@ -215,6 +229,7 @@ Recent engineering checkpoints:
 ## Next build steps
 
 1. Treat Railway staging as the canonical MVP runtime baseline.
-2. Start post-MVP hardening or production launch prep only after a new day plan
-   defines the scope.
-3. Keep Day 25 as the MVP sign-off checkpoint.
+2. Execute the Day 26 production launch prep package only when real provider,
+   merchant webhook, DNS, and ops dependencies are available.
+3. Keep Day 25 as the MVP sign-off checkpoint and Day 26 as the production
+   launch prep checkpoint.
