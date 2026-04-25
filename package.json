@@ -1,0 +1,19 @@
+{
+  "name": "stablebooks",
+  "private": true,
+  "version": "0.1.0",
+  "packageManager": "pnpm@10.0.0",
+  "scripts": {
+    "dev": "corepack pnpm -r --parallel --filter @stablebooks/web --filter @stablebooks/api dev",
+    "dev:web": "corepack pnpm --filter @stablebooks/web dev",
+    "dev:api": "corepack pnpm --filter @stablebooks/api start:dev",
+    "build": "corepack pnpm -r --filter @stablebooks/web --filter @stablebooks/api build",
+    "lint": "corepack pnpm -r --filter @stablebooks/web --filter @stablebooks/api lint",
+    "typecheck": "corepack pnpm -r --filter @stablebooks/web --filter @stablebooks/api typecheck",
+    "test": "corepack pnpm -r --filter @stablebooks/web --filter @stablebooks/api test"
+  },
+  "devDependencies": {
+    "turbo": "^2.0.0",
+    "typescript": "^5.6.3"
+  }
+}

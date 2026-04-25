@@ -1,0 +1,33 @@
+{
+  "name": "@stablebooks/api",
+  "private": true,
+  "version": "0.1.0",
+  "scripts": {
+    "start:dev": "nest start --watch",
+    "build": "nest build",
+    "start": "node dist/main.js",
+    "db:generate": "prisma generate",
+    "db:migrate:dev": "prisma migrate dev",
+    "db:seed": "node prisma/seed.js",
+    "seed:store": "node scripts/seed-dev-store.js",
+    "smoke:arc-webhook": "node scripts/smoke-arc-webhook.js",
+    "smoke:production-flow": "node scripts/smoke-production-flow.js",
+    "lint": "echo \"No API lint config yet\"",
+    "typecheck": "tsc --project tsconfig.json --noEmit",
+    "test": "corepack pnpm run build && node scripts/test-arc-regressions.js && node scripts/test-webhook-regressions.js"
+  },
+  "dependencies": {
+    "@nestjs/common": "^11.0.0",
+    "@nestjs/core": "^11.0.0",
+    "@nestjs/platform-express": "^11.0.0",
+    "@prisma/client": "^6.18.0",
+    "reflect-metadata": "^0.2.2",
+    "rxjs": "^7.8.1"
+  },
+  "devDependencies": {
+    "@nestjs/cli": "^11.0.0",
+    "@types/node": "^22.0.0",
+    "prisma": "^6.18.0",
+    "typescript": "^5.6.3"
+  }
+}

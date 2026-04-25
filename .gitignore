@@ -1,0 +1,31 @@
+# dependencies
+node_modules/
+.pnpm-store/
+
+# build
+.next/
+.next-dev/
+dist/
+coverage/
+*.tsbuildinfo
+
+# env
+.env
+.env.local
+.env.*.local
+
+# logs
+*.log
+
+# OS / editors
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+
+# turbo
+.turbo/
+
+# prisma / db
+*.db
+apps/api/data/*.json

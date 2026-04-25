@@ -1,0 +1,407 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum MembershipRole {
+  admin
+  member
+}
+
+enum OnboardingStatus {
+  pending_wallet
+  completed
+}
+
+enum WalletRole {
+  collection
+  operating
+  reserve
+  payout
+}
+
+enum WalletStatus {
+  active
+  disabled
+}
+
+enum InvoiceStatus {
+  draft
+  open
+  processing
+  paid
+}
+
+enum PaymentStatus {
+  pending
+  processing
+  finalized
+  failed
+}
+
+enum PaymentMatchResult {
+  pending
+  exact
+  unmatched
+  ambiguous
+  rejected
+}
+
+enum ObservationStatus {
+  detected
+  matched
+  confirmed
+  rejected
+}
+
+enum ConfirmationSource {
+  admin
+  mock_chain
+  arc_ingestion
+}
+
+enum PaymentEventType {
+  payment_session_created
+  payment_match_recorded
+  payment_processing_started
+  payment_confirmation_received
+  payment_failure_received
+  payment_finalized
+  payment_failed
+  webhook_delivery_succeeded
+  webhook_delivery_failed
+}
+
+enum WebhookEventType {
+  payment_finalized
+  payment_failed
+}
+
+enum WebhookDeliveryStatus {
+  disabled
+  delivered
+  failed
+  dead_letter
+}
+
+model User {
+  id           String       @id @default(cuid())
+  email        String       @unique
+  name         String
+  passwordHash String
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
+  sessions     Session[]
+  memberships  Membership[]
+}
+
+model Session {
+  id        String   @id @default(cuid())
+  token     String   @unique
+  userId    String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Organization {
+  id                String                    @id @default(cuid())
+  name              String
+  billingCountry    String                    @default("US")
+  baseCurrency      String                    @default("USD")
+  onboardingStatus  OnboardingStatus          @default(pending_wallet)
+  createdAt         DateTime                  @default(now())
+  updatedAt         DateTime                  @updatedAt
+  memberships       Membership[]
+  wallets           Wallet[]
+  customers         Customer[]
+  invoices          Invoice[]
+  payments          Payment[]
+  observations      ChainPaymentObservation[]
+  rawChainEvents    RawChainEvent[]
+  paymentMatches    PaymentMatch[]
+  paymentEvents     PaymentEvent[]
+  webhookEndpoints  WebhookEndpoint[]
+  webhookDeliveries WebhookDelivery[]
+}
+
+model Membership {
+  id             String         @id @default(cuid())
+  userId         String
+  organizationId String
+  role           MembershipRole
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
+  organization   Organization   @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  user           User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, organizationId])
+}
+
+model Wallet {
+  id                  String                    @id @default(cuid())
+  organizationId      String
+  chain               String
+  address             String
+  label               String
+  role                WalletRole
+  isDefaultSettlement Boolean                   @default(false)
+  status              WalletStatus              @default(active)
+  createdAt           DateTime                  @default(now())
+  updatedAt           DateTime                  @updatedAt
+  organization        Organization              @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  observations        ChainPaymentObservation[]
+  rawChainEvents      RawChainEvent[]
+
+  @@unique([organizationId, chain, address])
+}
+
+model Customer {
+  id              String       @id @default(cuid())
+  organizationId  String
+  name            String
+  email           String
+  billingCurrency String
+  metadataJson    Json?
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
+  organization    Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  invoices        Invoice[]
+
+  @@unique([organizationId, email])
+}
+
+model Invoice {
+  id                String                    @id @default(cuid())
+  organizationId    String
+  customerId        String
+  publicToken       String                    @unique
+  referenceCode     String                    @unique
+  amountMinor       Int
+  currency          String
+  expectedChainId   Int?
+  expectedToken     String?
+  dueAt             DateTime
+  expiresAt         DateTime?
+  memo              String
+  internalNote      String
+  status            InvoiceStatus             @default(draft)
+  publishedAt       DateTime?
+  createdAt         DateTime                  @default(now())
+  updatedAt         DateTime                  @updatedAt
+  customer          Customer                  @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  organization      Organization              @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  payments          Payment[]
+  paymentMatches    PaymentMatch[]
+  paymentEvents     PaymentEvent[]
+  webhookDeliveries WebhookDelivery[]
+  observations      ChainPaymentObservation[]
+
+  @@index([organizationId, status])
+}
+
+model Payment {
+  id                      String                    @id @default(cuid())
+  organizationId          String
+  invoiceId               String
+  publicToken             String                    @unique
+  status                  PaymentStatus             @default(pending)
+  matchResult             PaymentMatchResult        @default(pending)
+  matchReason             String?
+  observationId           String?                   @unique
+  amountMinor             Int
+  currency                String
+  token                   String?
+  amountAtomic            String?
+  normalizedAmount        Decimal?                  @db.Decimal(30, 12)
+  decimals                Int?
+  chainId                 Int?
+  txHash                  String?
+  logIndex                Int?
+  blockNumber             Int?
+  fromAddress             String?
+  toAddress               String?
+  settlementReference     String?
+  failureReason           String?
+  confirmationSource      ConfirmationSource?
+  confirmationTxHash      String?
+  confirmationBlockNumber Int?
+  sourceConfirmedAt       DateTime?
+  confirmationReceivedAt  DateTime?
+  detectedAt              DateTime                  @default(now())
+  confirmedAt             DateTime?
+  startedAt               DateTime                  @default(now())
+  processingStartedAt     DateTime?
+  finalizedAt             DateTime?
+  createdAt               DateTime                  @default(now())
+  updatedAt               DateTime                  @updatedAt
+  invoice                 Invoice                   @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+  observation             ChainPaymentObservation?  @relation("PaymentObservation", fields: [observationId], references: [id], onDelete: SetNull)
+  observedSignals         ChainPaymentObservation[] @relation("ObservationPayment")
+  organization            Organization              @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  paymentEvents           PaymentEvent[]
+  paymentMatches          PaymentMatch[]
+  webhookDeliveries       WebhookDelivery[]
+
+  @@index([organizationId, status])
+  @@index([invoiceId])
+  @@index([status])
+  @@index([toAddress])
+  @@index([chainId, txHash])
+}
+
+model ChainPaymentObservation {
+  id                String            @id @default(cuid())
+  organizationId    String
+  walletId          String?
+  paymentId         String?
+  invoiceId         String?
+  rawChainEventId   String?           @unique
+  chainId           Int
+  txHash            String
+  logIndex          Int               @default(0)
+  blockNumber       Int
+  fromAddress       String
+  toAddress         String
+  token             String
+  amountAtomic      String
+  decimals          Int
+  status            ObservationStatus @default(detected)
+  observedAt        DateTime          @default(now())
+  sourceConfirmedAt DateTime?
+  confirmedAt       DateTime?
+  rawPayload        Json?
+  createdAt         DateTime          @default(now())
+  updatedAt         DateTime          @updatedAt
+  invoice           Invoice?          @relation(fields: [invoiceId], references: [id], onDelete: SetNull)
+  organization      Organization      @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  payment           Payment?          @relation("ObservationPayment", fields: [paymentId], references: [id], onDelete: SetNull)
+  rawChainEvent     RawChainEvent?    @relation(fields: [rawChainEventId], references: [id], onDelete: SetNull)
+  resolvedPayment   Payment?          @relation("PaymentObservation")
+  wallet            Wallet?           @relation(fields: [walletId], references: [id], onDelete: SetNull)
+  paymentMatches    PaymentMatch[]
+
+  @@unique([chainId, txHash, logIndex])
+  @@index([organizationId, status])
+  @@index([toAddress])
+}
+
+model PaymentMatch {
+  id             String                  @id @default(cuid())
+  organizationId String
+  paymentId      String?
+  invoiceId      String?
+  observationId  String                  @unique
+  matchResult    PaymentMatchResult
+  matchReason    String
+  createdAt      DateTime                @default(now())
+  updatedAt      DateTime                @updatedAt
+  invoice        Invoice?                @relation(fields: [invoiceId], references: [id], onDelete: SetNull)
+  observation    ChainPaymentObservation @relation(fields: [observationId], references: [id], onDelete: Cascade)
+  organization   Organization            @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  payment        Payment?                @relation(fields: [paymentId], references: [id], onDelete: SetNull)
+}
+
+model RawChainEvent {
+  id                String                    @id @default(cuid())
+  organizationId    String?
+  walletId          String?
+  chainId           Int
+  txHash            String
+  logIndex          Int                       @default(0)
+  blockNumber       Int
+  blockTimestamp    DateTime?
+  fromAddress       String
+  toAddress         String
+  token             String
+  amountAtomic      String
+  decimals          Int
+  sourceConfirmedAt DateTime?
+  rawPayload        Json
+  observedAt        DateTime                  @default(now())
+  createdAt         DateTime                  @default(now())
+  updatedAt         DateTime                  @updatedAt
+  observations      ChainPaymentObservation[]
+  organization      Organization?             @relation(fields: [organizationId], references: [id], onDelete: SetNull)
+  wallet            Wallet?                   @relation(fields: [walletId], references: [id], onDelete: SetNull)
+
+  @@unique([chainId, txHash, logIndex])
+  @@index([blockNumber])
+  @@index([organizationId, observedAt])
+}
+
+model PaymentEvent {
+  id             String           @id @default(cuid())
+  organizationId String
+  invoiceId      String
+  paymentId      String
+  type           PaymentEventType
+  fromStatus     PaymentStatus?
+  toStatus       PaymentStatus
+  note           String
+  payload        Json?
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime         @updatedAt
+  invoice        Invoice          @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+  organization   Organization     @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  payment        Payment          @relation(fields: [paymentId], references: [id], onDelete: Cascade)
+
+  @@index([paymentId, createdAt])
+}
+
+model WebhookEndpoint {
+  id             String            @id @default(cuid())
+  organizationId String
+  url            String
+  signingSecret  String
+  isEnabled      Boolean           @default(true)
+  createdAt      DateTime          @default(now())
+  updatedAt      DateTime          @updatedAt
+  deliveries     WebhookDelivery[]
+  organization   Organization      @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId, isEnabled])
+}
+
+model WebhookDelivery {
+  id                    String                @id @default(cuid())
+  organizationId        String
+  invoiceId             String
+  paymentId             String
+  endpointId            String?
+  eventId               String
+  eventCreatedAt        DateTime              @default(now())
+  eventType             WebhookEventType
+  paymentStatusSnapshot PaymentStatus
+  invoiceStatusSnapshot InvoiceStatus
+  replayOfDeliveryId    String?
+  status                WebhookDeliveryStatus @default(failed)
+  destination           String?
+  signature             String?
+  payload               Json
+  attemptCount          Int                   @default(0)
+  responseStatus        Int?
+  responseBody          String?
+  errorMessage          String?
+  maxAttempts           Int                   @default(4)
+  lastAttemptAt         DateTime?
+  nextAttemptAt         DateTime?
+  deliveredAt           DateTime?
+  deadLetteredAt        DateTime?
+  createdAt             DateTime              @default(now())
+  updatedAt             DateTime              @updatedAt
+  endpoint              WebhookEndpoint?      @relation(fields: [endpointId], references: [id], onDelete: SetNull)
+  invoice               Invoice               @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+  organization          Organization          @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  payment               Payment               @relation(fields: [paymentId], references: [id], onDelete: Cascade)
+
+  @@index([endpointId, status])
+  @@index([organizationId, status])
+  @@index([eventId])
+  @@index([replayOfDeliveryId])
+  @@index([status, nextAttemptAt])
+}
