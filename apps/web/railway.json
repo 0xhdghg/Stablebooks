@@ -1,0 +1,14 @@
+{
+  "$schema": "https://railway.com/railway.schema.json",
+  "build": {
+    "builder": "RAILPACK",
+    "buildCommand": "corepack pnpm --filter @stablebooks/web build"
+  },
+  "deploy": {
+    "startCommand": "node .next/standalone/server.js",
+    "healthcheckPath": "/signin",
+    "healthcheckTimeout": 120,
+    "restartPolicyType": "ON_FAILURE",
+    "restartPolicyMaxRetries": 5
+  }
+}
