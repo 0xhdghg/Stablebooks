@@ -210,6 +210,20 @@ Recent engineering checkpoints:
   dead-letter, and replay.
 - [Day 26 acceptance](/G:/bugbounty/Stablebooks/docs/day-26-acceptance-note.md):
   accepted production launch prep package.
+- [Day 27 plan](/G:/bugbounty/Stablebooks/docs/day-27-execution-plan.md):
+  production dependency execution prep.
+- [Day 27 provider dependency packet](/G:/bugbounty/Stablebooks/docs/day-27-provider-dependency-packet.md):
+  required provider access, source profile, callback targets, secret placement,
+  and pass/fail evidence.
+- [Day 27 merchant webhook receiver packet](/G:/bugbounty/Stablebooks/docs/day-27-merchant-webhook-receiver-packet.md):
+  receiver requirements, retry/dead-letter/replay matrix, and evidence rules.
+- [Day 27 domain/env mapping](/G:/bugbounty/Stablebooks/docs/day-27-domain-env-mapping.md):
+  production API/Web origins, Railway env mapping, provider callback URLs, and
+  no-go conditions.
+- [Day 27 ops baseline and launch rehearsal](/G:/bugbounty/Stablebooks/docs/day-27-ops-baseline-and-launch-rehearsal.md):
+  ownership, health checks, rollback checkpoints, and rehearsal worksheet.
+- [Day 27 acceptance](/G:/bugbounty/Stablebooks/docs/day-27-acceptance-note.md):
+  accepted external dependency execution prep package.
 - [Production env checklist](/G:/bugbounty/Stablebooks/docs/production-env-checklist.md):
   Postgres-backed runtime, Arc webhook-first config, outbound webhook config,
   smoke variables, and no-commit rules.
@@ -229,7 +243,7 @@ Recent engineering checkpoints:
 ## Next build steps
 
 1. Treat Railway staging as the canonical MVP runtime baseline.
-2. Execute the Day 26 production launch prep package only when real provider,
-   merchant webhook, DNS, and ops dependencies are available.
-3. Keep Day 25 as the MVP sign-off checkpoint and Day 26 as the production
-   launch prep checkpoint.
+2. Execute one Day 27 dependency packet at a time when the matching external
+   access is available.
+3. Prefer provider dependency execution first, then merchant webhook receiver,
+   then production domain and ops launch rehearsal.
