@@ -163,6 +163,14 @@ Recent engineering checkpoints:
   real Railway verification after the auth cutover.
 - [Day 21 acceptance](/G:/bugbounty/Stablebooks/docs/day-21-acceptance-note.md):
   accepted hosted-mode auth persistence migration.
+- [Day 22 plan](/G:/bugbounty/Stablebooks/docs/day-22-execution-plan.md):
+  hosted bootstrap bridge cleanup for organization, wallet, and customer flows.
+- [Day 22 hosted bridge cleanup](/G:/bugbounty/Stablebooks/docs/day-22-hosted-bridge-cleanup.md):
+  removal of unnecessary hosted-mode JSON mutation for bootstrap domains.
+- [Day 22 hosted verification](/G:/bugbounty/Stablebooks/docs/day-22-hosted-verification.md):
+  Railway verification after hosted bootstrap cleanup.
+- [Day 22 acceptance](/G:/bugbounty/Stablebooks/docs/day-22-acceptance-note.md):
+  accepted hosted bootstrap bridge cleanup.
 - [Production env checklist](/G:/bugbounty/Stablebooks/docs/production-env-checklist.md):
   Postgres-backed runtime, Arc webhook-first config, outbound webhook config,
   smoke variables, and no-commit rules.
@@ -181,6 +189,6 @@ Recent engineering checkpoints:
 
 ## Next build steps
 
-1. Start Day 22: reduce the remaining bridge logic around hosted-mode organization bootstrap.
-2. Decide which legacy JSON paths stay only as fallback and which should stop mutating in hosted mode.
-3. Keep tightening the hosted runtime toward a cleaner Postgres-only MVP posture.
+1. Start Day 23: audit the remaining fallback boundaries and decide how strict hosted-mode rollback should be.
+2. Decide whether JSON fallback stays local/dev-only or remains available with stronger hosted guardrails.
+3. Keep tightening the hosted runtime toward a clearer Postgres-first MVP posture.
