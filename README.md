@@ -171,6 +171,15 @@ Recent engineering checkpoints:
   Railway verification after hosted bootstrap cleanup.
 - [Day 22 acceptance](/G:/bugbounty/Stablebooks/docs/day-22-acceptance-note.md):
   accepted hosted bootstrap bridge cleanup.
+- [Day 23 plan](/G:/bugbounty/Stablebooks/docs/day-23-execution-plan.md):
+  hosted fallback boundary policy and guardrails.
+- [Day 23 fallback policy](/G:/bugbounty/Stablebooks/docs/day-23-fallback-policy.md):
+  explicit rule that hosted JSON fallback is emergency-only and override-gated.
+- [Day 23 hosted verification](/G:/bugbounty/Stablebooks/docs/day-23-hosted-verification.md):
+  Railway verification of `hostedRuntimePolicy` and end-to-end rehearsal after
+  guardrails.
+- [Day 23 acceptance](/G:/bugbounty/Stablebooks/docs/day-23-acceptance-note.md):
+  accepted hosted fallback guardrails.
 - [Production env checklist](/G:/bugbounty/Stablebooks/docs/production-env-checklist.md):
   Postgres-backed runtime, Arc webhook-first config, outbound webhook config,
   smoke variables, and no-commit rules.
@@ -189,6 +198,6 @@ Recent engineering checkpoints:
 
 ## Next build steps
 
-1. Start Day 23: audit the remaining fallback boundaries and decide how strict hosted-mode rollback should be.
-2. Decide whether JSON fallback stays local/dev-only or remains available with stronger hosted guardrails.
-3. Keep tightening the hosted runtime toward a clearer Postgres-first MVP posture.
+1. Start Day 24: review remaining observability and operator-readiness gaps before MVP sign-off.
+2. Decide whether one final hardening day is needed before calling the MVP launch-ready.
+3. Keep the hosted Railway path as the canonical MVP runtime.
