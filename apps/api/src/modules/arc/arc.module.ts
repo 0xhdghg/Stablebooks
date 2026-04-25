@@ -6,6 +6,7 @@ import { ArcController } from "./arc.controller";
 import { ArcFixturesService } from "./arc-fixtures.service";
 import { ArcEventNormalizerService } from "./arc-event-normalizer.service";
 import { ArcProviderDecoderService } from "./arc-provider-decoder.service";
+import { ArcNativeLogForwarderService } from "./arc-native-log-forwarder.service";
 import { CircleWebhookVerifierService } from "./circle-webhook-verifier.service";
 
 @Module({
@@ -16,6 +17,7 @@ import { CircleWebhookVerifierService } from "./circle-webhook-verifier.service"
     ArcFixturesService,
     ArcEventNormalizerService,
     ArcProviderDecoderService,
+    ArcNativeLogForwarderService,
     CircleWebhookVerifierService,
     ArcAdapterService
   ],
