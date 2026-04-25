@@ -49,6 +49,38 @@ export class WalletsService {
       throw new BadRequestException("Provide a valid chain, label, and wallet address.");
     }
 
+    if (this.shouldUsePostgresWorkspace()) {
+      const now = new Date().toISOString();
+      const wallet: AppWallet = {
+        id: this.createId("wal"),
+        organizationId,
+        chain,
+        address,
+        label,
+        role: input.role,
+        isDefaultSettlement: input.isDefaultSettlement,
+        status: "active",
+        createdAt: now,
+        updatedAt: now
+      };
+
+      await this.workspaceReadRepository.createWallet({
+        id: wallet.id,
+        organizationId: wallet.organizationId,
+        chain: wallet.chain,
+        address: wallet.address,
+        label: wallet.label,
+        role: wallet.role,
+        isDefaultSettlement: wallet.isDefaultSettlement
+      });
+
+      if (wallet.isDefaultSettlement) {
+        await this.organizationsService.markCompleted(organizationId);
+      }
+
+      return wallet;
+    }
+
     const createdWallet = await this.storage.mutate(async (store) => {
       const duplicate = store.wallets.find(
         (wallet) =>
@@ -87,18 +119,6 @@ export class WalletsService {
       store.wallets.push(wallet);
       return wallet;
     });
-
-    if (this.shouldUsePostgresWorkspace()) {
-      await this.workspaceReadRepository.createWallet({
-        id: createdWallet.id,
-        organizationId: createdWallet.organizationId,
-        chain: createdWallet.chain,
-        address: createdWallet.address,
-        label: createdWallet.label,
-        role: createdWallet.role,
-        isDefaultSettlement: createdWallet.isDefaultSettlement
-      });
-    }
 
     if (createdWallet.isDefaultSettlement) {
       await this.organizationsService.markCompleted(organizationId);

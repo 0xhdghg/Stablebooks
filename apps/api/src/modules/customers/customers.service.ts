@@ -74,6 +74,30 @@ export class CustomersService {
       throw new BadRequestException("Name, email, and billing currency are required.");
     }
 
+    if (this.shouldUsePostgresWorkspace()) {
+      const now = new Date().toISOString();
+      const customer: AppCustomer = {
+        id: this.createId("cus"),
+        organizationId,
+        name,
+        email,
+        billingCurrency,
+        metadata: null,
+        createdAt: now,
+        updatedAt: now
+      };
+
+      await this.workspaceReadRepository.createCustomer({
+        id: customer.id,
+        organizationId: customer.organizationId,
+        name: customer.name,
+        email: customer.email,
+        billingCurrency: customer.billingCurrency
+      });
+
+      return customer;
+    }
+
     return this.storage.mutate(async (store) => {
       const duplicate = store.customers.find(
         (customer) =>
@@ -98,17 +122,6 @@ export class CustomersService {
       };
 
       store.customers.push(customer);
-
-      if (this.shouldUsePostgresWorkspace()) {
-        await this.workspaceReadRepository.createCustomer({
-          id: customer.id,
-          organizationId: customer.organizationId,
-          name: customer.name,
-          email: customer.email,
-          billingCurrency: customer.billingCurrency
-        });
-      }
-
       return customer;
     });
   }

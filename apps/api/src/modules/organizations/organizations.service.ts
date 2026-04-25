@@ -36,13 +36,50 @@ export class OrganizationsService {
       if (existingMembership) {
         throw new BadRequestException("This user already has an organization.");
       }
+
+      const now = new Date().toISOString();
+      const organization: AppOrganization = {
+        id: this.createId("org"),
+        name,
+        billingCountry,
+        baseCurrency,
+        onboardingStatus: "pending_wallet",
+        createdAt: now,
+        updatedAt: now
+      };
+      const membership: AppMembership = {
+        id: this.createId("mem"),
+        userId: auth.userId,
+        organizationId: organization.id,
+        role: "admin",
+        createdAt: now
+      };
+
+      await this.workspaceReadRepository.createOrganization({
+        id: organization.id,
+        name: organization.name,
+        billingCountry: organization.billingCountry,
+        baseCurrency: organization.baseCurrency,
+        onboardingStatus: organization.onboardingStatus
+      });
+      await this.authRuntimeRepository.createMembership({
+        id: membership.id,
+        userId: membership.userId,
+        organizationId: membership.organizationId,
+        role: membership.role
+      });
+
+      return {
+        organization,
+        membership
+      };
     }
 
     return this.storage.mutate(async (store) => {
       const existingMembershipInStore = store.memberships.find(
         (membership) => membership.userId === auth.userId
       );
-      if (existingMembershipInStore && !this.shouldUsePostgresWorkspace()) {
+      if (existingMembershipInStore) {
         throw new BadRequestException("This user already has an organization.");
       }
 
@@ -66,22 +103,6 @@ export class OrganizationsService {
 
       store.organizations.push(organization);
       store.memberships.push(membership);
-
-      if (this.shouldUsePostgresWorkspace()) {
-        await this.workspaceReadRepository.createOrganization({
-          id: organization.id,
-          name: organization.name,
-          billingCountry: organization.billingCountry,
-          baseCurrency: organization.baseCurrency,
-          onboardingStatus: organization.onboardingStatus
-        });
-        await this.authRuntimeRepository.createMembership({
-          id: membership.id,
-          userId: membership.userId,
-          organizationId: membership.organizationId,
-          role: membership.role
-        });
-      }
 
       return {
         organization,
@@ -107,6 +128,14 @@ export class OrganizationsService {
   }
 
   async markCompleted(organizationId: string) {
+    if (this.shouldUsePostgresWorkspace()) {
+      await this.workspaceReadRepository.updateOrganizationOnboardingStatus(
+        organizationId,
+        "completed"
+      );
+      return;
+    }
+
     await this.storage.mutate(async (store) => {
       const organization = store.organizations.find((entry) => entry.id === organizationId);
       if (!organization) {
@@ -116,13 +145,6 @@ export class OrganizationsService {
       organization.onboardingStatus = "completed";
       organization.updatedAt = new Date().toISOString();
     });
-
-    if (this.shouldUsePostgresWorkspace()) {
-      await this.workspaceReadRepository.updateOrganizationOnboardingStatus(
-        organizationId,
-        "completed"
-      );
-    }
   }
 
   private createId(prefix: string) {
