@@ -155,6 +155,14 @@ Recent engineering checkpoints:
   hosted rehearsal helpers.
 - [Day 20 acceptance](/G:/bugbounty/Stablebooks/docs/day-20-acceptance-note.md):
   accepted repeated staging hardening and full hosted rehearsal automation.
+- [Day 21 plan](/G:/bugbounty/Stablebooks/docs/day-21-execution-plan.md):
+  Prisma-backed operator auth runtime cutover for hosted mode.
+- [Day 21 auth cutover note](/G:/bugbounty/Stablebooks/docs/day-21-auth-cutover-note.md):
+  what moved from JSON auth runtime into Prisma-backed persistence.
+- [Day 21 hosted verification](/G:/bugbounty/Stablebooks/docs/day-21-hosted-verification.md):
+  real Railway verification after the auth cutover.
+- [Day 21 acceptance](/G:/bugbounty/Stablebooks/docs/day-21-acceptance-note.md):
+  accepted hosted-mode auth persistence migration.
 - [Production env checklist](/G:/bugbounty/Stablebooks/docs/production-env-checklist.md):
   Postgres-backed runtime, Arc webhook-first config, outbound webhook config,
   smoke variables, and no-commit rules.
@@ -173,6 +181,6 @@ Recent engineering checkpoints:
 
 ## Next build steps
 
-1. Start Day 21: move operator auth persistence toward Prisma-backed storage.
-2. Reduce the remaining JSON/auth runtime split in `users`, `sessions`, and membership lookup.
-3. Keep the hosted staging path repeatable while shrinking bridge-only logic.
+1. Start Day 22: reduce the remaining bridge logic around hosted-mode organization bootstrap.
+2. Decide which legacy JSON paths stay only as fallback and which should stop mutating in hosted mode.
+3. Keep tightening the hosted runtime toward a cleaner Postgres-only MVP posture.
