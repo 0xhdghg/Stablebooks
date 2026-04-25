@@ -91,7 +91,15 @@ export class ArcNativeLogForwarderService implements OnModuleInit, OnModuleDestr
       const logs = await this.getNativeTransferLogs(config, fromBlock, toBlock);
 
       for (const log of logs) {
-        await this.ingestLog(config, log);
+        try {
+          await this.ingestLog(config, log);
+        } catch (error) {
+          if (!this.isIgnorableLogError(error)) {
+            this.logger.warn(
+              `Arc native log ingestion failed: ${this.errorMessage(error)}`
+            );
+          }
+        }
       }
 
       this.nextBlock = toBlock + 1;
@@ -325,5 +333,13 @@ export class ArcNativeLogForwarderService implements OnModuleInit, OnModuleDestr
 
   private errorMessage(error: unknown) {
     return error instanceof Error ? error.message : String(error);
+  }
+
+  private isIgnorableLogError(error: unknown) {
+    const message = this.errorMessage(error);
+    return (
+      message.includes("No known settlement wallet could be resolved") ||
+      message.includes("No organization could be resolved")
+    );
   }
 }
