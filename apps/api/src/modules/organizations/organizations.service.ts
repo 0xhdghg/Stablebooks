@@ -6,12 +6,14 @@ import {
   AppOrganization,
   StorageService
 } from "../storage/storage.service";
+import { AuthRuntimeRepository } from "../storage/auth-runtime.repository";
 import { WorkspaceReadRepository } from "../storage/workspace-read.repository";
 
 @Injectable()
 export class OrganizationsService {
   constructor(
     private readonly storage: StorageService,
+    private readonly authRuntimeRepository: AuthRuntimeRepository,
     private readonly workspaceReadRepository: WorkspaceReadRepository
   ) {}
 
@@ -27,11 +29,20 @@ export class OrganizationsService {
       throw new BadRequestException("Organization name, billing country, and base currency are required.");
     }
 
-    return this.storage.mutate(async (store) => {
-      const existingMembership = store.memberships.find(
-        (membership) => membership.userId === auth.userId
+    if (this.shouldUsePostgresWorkspace()) {
+      const existingMembership = await this.authRuntimeRepository.getMembershipForUser(
+        auth.userId
       );
       if (existingMembership) {
+        throw new BadRequestException("This user already has an organization.");
+      }
+    }
+
+    return this.storage.mutate(async (store) => {
+      const existingMembershipInStore = store.memberships.find(
+        (membership) => membership.userId === auth.userId
+      );
+      if (existingMembershipInStore && !this.shouldUsePostgresWorkspace()) {
         throw new BadRequestException("This user already has an organization.");
       }
 
@@ -63,6 +74,12 @@ export class OrganizationsService {
           billingCountry: organization.billingCountry,
           baseCurrency: organization.baseCurrency,
           onboardingStatus: organization.onboardingStatus
+        });
+        await this.authRuntimeRepository.createMembership({
+          id: membership.id,
+          userId: membership.userId,
+          organizationId: membership.organizationId,
+          role: membership.role
         });
       }
 

@@ -12,6 +12,10 @@ import {
   AppWallet,
   StorageService
 } from "../storage/storage.service";
+import {
+  AuthRuntimeContext,
+  AuthRuntimeRepository
+} from "../storage/auth-runtime.repository";
 
 type AuthContext = {
   user: AppUser;
@@ -23,7 +27,10 @@ type AuthContext = {
 
 @Injectable()
 export class AuthService {
-  constructor(private readonly storage: StorageService) {}
+  constructor(
+    private readonly storage: StorageService,
+    private readonly authRuntimeRepository: AuthRuntimeRepository
+  ) {}
 
   async signup(input: { email: string; password: string; name: string }) {
     const email = input.email.trim().toLowerCase();
@@ -31,6 +38,18 @@ export class AuthService {
 
     if (!email || !name || input.password.length < 8) {
       throw new BadRequestException("Provide name, email, and a password with at least 8 characters.");
+    }
+
+    if (this.shouldUsePostgresAuth()) {
+      const context = await this.authRuntimeRepository.createUserWithSession({
+        userId: this.createId("usr"),
+        token: this.createToken(),
+        email,
+        name,
+        passwordHash: this.hashPassword(input.password)
+      });
+
+      return this.serializeAuthResponse(context);
     }
 
     return this.storage.mutate(async (store) => {
@@ -69,6 +88,20 @@ export class AuthService {
 
   async signin(input: { email: string; password: string }) {
     const email = input.email.trim().toLowerCase();
+
+    if (this.shouldUsePostgresAuth()) {
+      const user = await this.authRuntimeRepository.findUserByEmail(email);
+      if (!user || !this.verifyPassword(input.password, user.passwordHash)) {
+        throw new UnauthorizedException("Invalid email or password.");
+      }
+
+      const context = await this.authRuntimeRepository.replaceUserSession(
+        user.id,
+        this.createToken()
+      );
+
+      return this.serializeAuthResponse(context);
+    }
 
     return this.storage.mutate(async (store) => {
       const user = store.users.find((entry) => entry.email === email);
@@ -109,6 +142,11 @@ export class AuthService {
       return { success: true };
     }
 
+    if (this.shouldUsePostgresAuth()) {
+      await this.authRuntimeRepository.deleteSessionByToken(token);
+      return { success: true };
+    }
+
     await this.storage.mutate(async (store) => {
       store.sessions = store.sessions.filter((entry) => entry.token !== token);
     });
@@ -117,6 +155,10 @@ export class AuthService {
   }
 
   async getContextFromToken(token: string | null): Promise<AuthContext> {
+    if (this.shouldUsePostgresAuth()) {
+      return this.authRuntimeRepository.getContextByToken(token);
+    }
+
     if (!token) {
       throw new UnauthorizedException("Missing authentication token.");
     }
@@ -207,5 +249,9 @@ export class AuthService {
 
   private createToken() {
     return `sb_${randomBytes(24).toString("hex")}`;
+  }
+
+  private shouldUsePostgresAuth() {
+    return process.env.STABLEBOOKS_STORAGE_MODE?.trim() === "postgres_reads";
   }
 }

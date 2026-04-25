@@ -1,4 +1,5 @@
 import { Global, Module } from "@nestjs/common";
+import { AuthRuntimeRepository } from "./auth-runtime.repository";
 import { ArcEvidenceRepository } from "./arc-evidence.repository";
 import { PostgresReadinessService } from "./postgres-readiness.service";
 import { PrismaService } from "./prisma.service";
@@ -11,6 +12,7 @@ import { WorkspaceReadRepository } from "./workspace-read.repository";
   providers: [
     StorageService,
     PrismaService,
+    AuthRuntimeRepository,
     PostgresReadinessService,
     ArcEvidenceRepository,
     WebhookDeliveryRepository,
@@ -19,6 +21,7 @@ import { WorkspaceReadRepository } from "./workspace-read.repository";
   exports: [
     StorageService,
     PrismaService,
+    AuthRuntimeRepository,
     PostgresReadinessService,
     ArcEvidenceRepository,
     WebhookDeliveryRepository,
