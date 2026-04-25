@@ -52,21 +52,28 @@ ARC_SOURCE_ENABLED=true
 ARC_SOURCE_KIND=webhook
 ARC_CHAIN_ID=5042002
 ARC_EVENT_MONITOR_SOURCE=circle_contracts_api
-ARC_EVENT_CONTRACT_ADDRESS=<final-monitored-contract-or-token>
-ARC_EVENT_SIGNATURE=Transfer(address,address,uint256)
+ARC_EVENT_CONTRACT_ADDRESS=0x1800000000000000000000000000000000000000
+ARC_EVENT_SIGNATURE=ArcNativeUSDCTransfer(address,address,uint256)
 ARC_EVENT_TOKEN_SYMBOL=USDC
-ARC_EVENT_TOKEN_DECIMALS=6
+ARC_EVENT_TOKEN_DECIMALS=18
 ```
 
 Do not enable polling for this verification.
+
+This profile matches the real MetaMask Arc Testnet wallet-send path observed
+during hosted testing. The optional ERC-20 interface at
+`0x3600000000000000000000000000000000000000` is not the normal wallet-send
+source and should not be used for this verification unless the test explicitly
+uses that contract-interface path.
 
 ## Provider setup checklist
 
 In the provider/Event Monitor tool:
 
 - create or select the Arc network source
-- select the final monitored contract or token address
-- monitor `Transfer(address,address,uint256)`
+- select the Arc native USDC log address:
+  `0x1800000000000000000000000000000000000000`
+- monitor the native Arc USDC transfer event
 - include transaction hash, block number, sender, recipient, token, amount,
   decimals, chain id, and confirmation timestamp in the payload
 - set callback URL to the Stablebooks API event endpoint

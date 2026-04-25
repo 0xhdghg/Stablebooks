@@ -234,6 +234,10 @@ Recent engineering checkpoints:
 - [Day 28 hosted deployment](/G:/bugbounty/Stablebooks/docs/day-28-hosted-deployment.md):
   Railway API deploy, Arc Testnet USDC source profile update, and hosted
   verification result.
+- [Day 29 plan](/G:/bugbounty/Stablebooks/docs/day-29-execution-plan.md):
+  native Arc Testnet USDC event support for the real MetaMask payment path.
+- [Day 29 acceptance](/G:/bugbounty/Stablebooks/docs/day-29-acceptance-note.md):
+  accepted native Arc USDC low-level log decoding and 18-decimal matching.
 - [Production env checklist](/G:/bugbounty/Stablebooks/docs/production-env-checklist.md):
   Postgres-backed runtime, Arc webhook-first config, outbound webhook config,
   smoke variables, and no-commit rules.
@@ -253,7 +257,7 @@ Recent engineering checkpoints:
 ## Next build steps
 
 1. Treat Railway staging as the canonical MVP runtime baseline.
-2. Deploy the Day 28 Circle-signed webhook backend path before switching Circle
-   Console away from webhook.site.
-3. After deploy, configure Circle API credentials in hosted secrets and run one
-   real Arc Testnet USDC transfer through Circle Event Monitoring.
+2. Deploy the Day 29 native Arc USDC source profile before relying on MetaMask
+   wallet-send payments.
+3. Reconfigure Circle/Event Monitor to deliver the native Arc USDC transfer
+   source and run one real Arc Testnet payment through hosted staging.

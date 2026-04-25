@@ -22,11 +22,14 @@ const failedTxHash =
   "0xregfailed0000000000000000000000000000000000000000000000000000000001";
 const circleSignedTxHash =
   "0xregcircle000000000000000000000000000000000000000000000000000000001";
+const nativeLowLevelTxHash =
+  "0xregnative00000000000000000000000000000000000000000000000000000001";
 const txHashes = [
   decodedProviderTxHash,
   finalizedTxHash,
   failedTxHash,
-  circleSignedTxHash
+  circleSignedTxHash,
+  nativeLowLevelTxHash
 ];
 const circleKeyId = "circle-regression-key";
 const circleKeys = generateKeyPairSync("ec", { namedCurve: "P-256" });
@@ -57,6 +60,7 @@ async function main() {
     await runProviderBoundaryRegression();
     await runProviderProfileValidationRegression();
     await runCircleWebhookSignatureRegression();
+    await runNativeArcUsdcLowLevelRegression();
 
     await runDecodedProviderPayloadRegression();
     await runFinalizedRegression();
@@ -131,7 +135,7 @@ async function runCircleWebhookSignatureRegression() {
       txHash: circleSignedTxHash,
       blockNumber: 504001,
       confirmedAt: "2026-04-25T12:01:00.000Z",
-      amount: "904000000"
+      amount: "904000000000000000000"
     })
   );
 
@@ -174,6 +178,71 @@ async function runCircleWebhookSignatureRegression() {
   assertEqual(invoice.data.status, "paid", "Circle signed event invoice paid");
 }
 
+async function runNativeArcUsdcLowLevelRegression() {
+  const scenario = await createPayableScenario({
+    amountMinor: 90500,
+    memo: "Arc native USDC low-level regression invoice",
+    internalNote: "Temporary Arc native low-level regression"
+  });
+
+  const eventResponse = await postCircleSignedJson(
+    "/arc/webhooks/events",
+    buildNativeArcUsdcEventLogPayload({
+      txHash: nativeLowLevelTxHash,
+      blockNumber: 504101,
+      confirmedAt: "2026-04-25T12:11:00.000Z",
+      from: "0x6666666666666666666666666666666666666666",
+      to: "0x1111111111111111111111111111111111111111",
+      amount: "905000000000000000000",
+      logIndex: 4
+    })
+  );
+
+  assertEqual(
+    eventResponse.data.providerBoundary.kind,
+    "circle_event_monitor",
+    "native low-level event boundary kind"
+  );
+  assertEqual(
+    eventResponse.data.providerDiagnostic.sourceProfileMatched,
+    true,
+    "native low-level event source profile matched"
+  );
+  assertEqual(
+    eventResponse.data.canonicalEvent.decimals,
+    18,
+    "native low-level event decimals"
+  );
+  assertEqual(
+    eventResponse.data.match.matchResult,
+    "exact",
+    "native low-level event match result"
+  );
+  assertEqual(
+    eventResponse.data.payment.status,
+    "processing",
+    "native low-level event processing status"
+  );
+
+  const finalityResponse = await postArcFinality({
+    txHash: nativeLowLevelTxHash,
+    outcome: "finalized",
+    logIndex: 4,
+    blockNumber: 504106,
+    confirmedAt: "2026-04-25T12:16:00.000Z",
+    settlementReference: "native-regression-001"
+  });
+
+  assertEqual(
+    finalityResponse.data.payment.status,
+    "finalized",
+    "native low-level event finalized payment status"
+  );
+
+  const invoice = await getAuthed(`/invoices/${scenario.invoiceId}`);
+  assertEqual(invoice.data.status, "paid", "native low-level event invoice paid");
+}
+
 async function runReadinessRegression() {
   const readiness = await getArcDev("/arc/dev/readiness");
 
@@ -201,7 +270,7 @@ async function runReadinessRegression() {
   );
   assertEqual(
     readiness.data.config.sourceProfile.tokenDecimals,
-    6,
+    18,
     "arc readiness source profile decimals"
   );
   assertEqual(
@@ -340,7 +409,7 @@ async function runProviderProfileValidationRegression() {
         },
         {
           notification: { tokenDecimals: 18 },
-          decoded: { decimals: 18 }
+          decoded: { decimals: 6 }
         }
       ),
       expected: "decimals",
@@ -406,7 +475,7 @@ async function runDecodedProviderPayloadRegression() {
     txHash: decodedProviderTxHash,
     blockNumber: 503001,
     confirmedAt: "2026-04-21T09:21:00.000Z",
-    amount: "903000000"
+    amount: "903000000000000000000"
   });
 
   assertEqual(
@@ -717,7 +786,7 @@ function buildArcDecodedProviderPayload(input, overrides = {}) {
     to: "0x1111111111111111111111111111111111111111",
     amount: input.amount,
     token: "USDC",
-    decimals: 6,
+    decimals: 18,
     chainId: 777,
     ...(overrides.decoded ?? {}),
     ...(overrides.notification?.decoded ?? {})
@@ -730,10 +799,10 @@ function buildArcDecodedProviderPayload(input, overrides = {}) {
       txHash: input.txHash,
       blockHeight: input.blockNumber,
       firstConfirmDate: input.confirmedAt,
-      contractAddress: "0x0000000000000000000000000000000000000001",
-      eventSignature: "Transfer(address,address,uint256)",
+      contractAddress: "0x1800000000000000000000000000000000000000",
+      eventSignature: "ArcNativeUSDCTransfer(address,address,uint256)",
       tokenSymbol: "USDC",
-      tokenDecimals: 6,
+      tokenDecimals: 18,
       logIndex: 0,
       topics: [
         "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef"
@@ -756,10 +825,10 @@ function buildCircleEventLogPayload(input) {
       txHash: input.txHash,
       blockHeight: input.blockNumber,
       firstConfirmDate: input.confirmedAt,
-      contractAddress: "0x0000000000000000000000000000000000000001",
-      eventSignature: "Transfer(address,address,uint256)",
+      contractAddress: "0x1800000000000000000000000000000000000000",
+      eventSignature: "ArcNativeUSDCTransfer(address,address,uint256)",
       tokenSymbol: "USDC",
-      tokenDecimals: 6,
+      tokenDecimals: 18,
       logIndex: 0,
       topics: [
         "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef"
@@ -770,13 +839,46 @@ function buildCircleEventLogPayload(input) {
         to: "0x1111111111111111111111111111111111111111",
         amount: input.amount,
         token: "USDC",
-        decimals: 6,
+        decimals: 18,
         chainId: 777
       }
     },
     timestamp: input.confirmedAt,
     version: 2
   };
+}
+
+function buildNativeArcUsdcEventLogPayload(input) {
+  return {
+    subscriptionId: "sub_native_regression",
+    notificationId: "notif_native_regression",
+    notificationType: "contracts.eventLog",
+    notification: {
+      blockchain: "ARC-TESTNET",
+      chainId: 777,
+      txHash: input.txHash,
+      blockHeight: input.blockNumber,
+      firstConfirmDate: input.confirmedAt,
+      contractAddress: "0x1800000000000000000000000000000000000000",
+      logIndex: input.logIndex,
+      topics: [
+        "0x62f084c00a442dcf51cdbb51beed2839bf42a268da8474b0e98f38edb7db5a22",
+        topicFromAddress(input.from),
+        topicFromAddress(input.to)
+      ],
+      data: uint256Hex(input.amount)
+    },
+    timestamp: input.confirmedAt,
+    version: 2
+  };
+}
+
+function topicFromAddress(address) {
+  return `0x${address.toLowerCase().replace(/^0x/, "").padStart(64, "0")}`;
+}
+
+function uint256Hex(value) {
+  return `0x${BigInt(value).toString(16).padStart(64, "0")}`;
 }
 
 async function postArcEvent(input) {
@@ -806,7 +908,7 @@ async function postArcFinality(input) {
     {
       txHash: input.txHash,
       chainId: 777,
-      logIndex: 0,
+      logIndex: input.logIndex ?? 0,
       outcome: input.outcome,
       confirmedAt: input.confirmedAt,
       blockNumber: input.blockNumber,
@@ -915,10 +1017,10 @@ function startApi() {
       ARC_CHAIN_ID: "777",
       ARC_WEBHOOK_SECRET: arcSecret,
       ARC_EVENT_MONITOR_SOURCE: "circle_contracts_api",
-      ARC_EVENT_CONTRACT_ADDRESS: "0x0000000000000000000000000000000000000001",
-      ARC_EVENT_SIGNATURE: "Transfer(address,address,uint256)",
+      ARC_EVENT_CONTRACT_ADDRESS: "0x1800000000000000000000000000000000000000",
+      ARC_EVENT_SIGNATURE: "ArcNativeUSDCTransfer(address,address,uint256)",
       ARC_EVENT_TOKEN_SYMBOL: "USDC",
-      ARC_EVENT_TOKEN_DECIMALS: "6",
+      ARC_EVENT_TOKEN_DECIMALS: "18",
       CIRCLE_WEBHOOK_PUBLIC_KEYS_JSON: JSON.stringify({
         [circleKeyId]: circlePublicKeyBase64
       }),

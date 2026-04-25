@@ -34,6 +34,10 @@ contract:
 ARC_EVENT_CONTRACT_ADDRESS=0x3600000000000000000000000000000000000000
 ```
 
+Day 29 supersedes this source profile for the normal MetaMask wallet-send
+flow. Real wallet sends emit native Arc USDC logs from
+`0x1800000000000000000000000000000000000000` with 18 decimals.
+
 No secret values are recorded in this document.
 
 ## Verification performed
@@ -93,4 +97,3 @@ Then update Circle Console webhook URL to:
 ```text
 https://stablebooks-api-production.up.railway.app/api/v1/arc/webhooks/events
 ```
-

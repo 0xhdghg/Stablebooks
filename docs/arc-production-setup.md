@@ -38,11 +38,18 @@ ARC_SOURCE_KIND=webhook
 ARC_CHAIN_ID=5042002
 ARC_WEBHOOK_SECRET=<secret-from-deployment-secret-store>
 ARC_EVENT_MONITOR_SOURCE=circle_contracts_api
-ARC_EVENT_CONTRACT_ADDRESS=<monitored-token-or-contract-address>
-ARC_EVENT_SIGNATURE=Transfer(address,address,uint256)
+ARC_EVENT_CONTRACT_ADDRESS=0x1800000000000000000000000000000000000000
+ARC_EVENT_SIGNATURE=ArcNativeUSDCTransfer(address,address,uint256)
 ARC_EVENT_TOKEN_SYMBOL=USDC
-ARC_EVENT_TOKEN_DECIMALS=6
+ARC_EVENT_TOKEN_DECIMALS=18
 ```
+
+The recommended profile above is for the normal Arc Testnet wallet flow:
+MetaMask sends native Arc USDC and the observed transfer log is emitted from
+`0x1800000000000000000000000000000000000000`. The optional ERC-20 interface at
+`0x3600000000000000000000000000000000000000` is not the default wallet-send
+path and should only be used if the provider is explicitly monitoring that
+contract-interface flow.
 
 Expected inbound endpoints:
 
@@ -156,6 +163,8 @@ by provider, chain id, contract address, and event signature.
 `ARC_EVENT_CONTRACT_ADDRESS`
 
 - Expected monitored token or contract address.
+- Recommended Arc native USDC value:
+  `0x1800000000000000000000000000000000000000`.
 - Used by the provider source profile.
 - Provider payloads from unexpected contracts are rejected before canonical
   ingestion.
@@ -163,7 +172,8 @@ by provider, chain id, contract address, and event signature.
 `ARC_EVENT_SIGNATURE`
 
 - Expected event signature.
-- First expected value: `Transfer(address,address,uint256)`.
+- Recommended Arc native USDC value:
+  `ArcNativeUSDCTransfer(address,address,uint256)`.
 - Provider payloads from unexpected events are rejected before canonical
   ingestion.
 
@@ -178,7 +188,7 @@ by provider, chain id, contract address, and event signature.
 `ARC_EVENT_TOKEN_DECIMALS`
 
 - Expected token decimals.
-- First expected value: `6`.
+- Recommended Arc native USDC value: `18`.
 - Provider payloads with different decimals are rejected before canonical
   ingestion.
 
@@ -319,10 +329,10 @@ ARC_SOURCE_KIND=webhook
 ARC_CHAIN_ID=5042002
 ARC_WEBHOOK_SECRET=replace-me-local-secret
 ARC_EVENT_MONITOR_SOURCE=circle_contracts_api
-ARC_EVENT_CONTRACT_ADDRESS=0x0000000000000000000000000000000000000001
-ARC_EVENT_SIGNATURE=Transfer(address,address,uint256)
+ARC_EVENT_CONTRACT_ADDRESS=0x1800000000000000000000000000000000000000
+ARC_EVENT_SIGNATURE=ArcNativeUSDCTransfer(address,address,uint256)
 ARC_EVENT_TOKEN_SYMBOL=USDC
-ARC_EVENT_TOKEN_DECIMALS=6
+ARC_EVENT_TOKEN_DECIMALS=18
 
 STABLEBOOKS_STORAGE_MODE=postgres_reads
 STABLEBOOKS_INVOICE_WRITE_MODE=postgres
@@ -353,10 +363,10 @@ Use this smoke script against local or staging webhook-first deployments:
 $env:ARC_WEBHOOK_BASE_URL="http://127.0.0.1:4000"
 $env:ARC_WEBHOOK_SECRET="replace-me-local-secret"
 $env:ARC_CHAIN_ID="5042002"
-$env:ARC_EVENT_CONTRACT_ADDRESS="0x0000000000000000000000000000000000000001"
-$env:ARC_EVENT_SIGNATURE="Transfer(address,address,uint256)"
+$env:ARC_EVENT_CONTRACT_ADDRESS="0x1800000000000000000000000000000000000000"
+$env:ARC_EVENT_SIGNATURE="ArcNativeUSDCTransfer(address,address,uint256)"
 $env:ARC_EVENT_TOKEN_SYMBOL="USDC"
-$env:ARC_EVENT_TOKEN_DECIMALS="6"
+$env:ARC_EVENT_TOKEN_DECIMALS="18"
 $env:ARC_SMOKE_TO="<expected-collection-wallet>"
 corepack pnpm --filter @stablebooks/api smoke:arc-webhook -- --dry-run
 corepack pnpm --filter @stablebooks/api smoke:arc-webhook

@@ -14,6 +14,9 @@ type DecoderContext = {
   sourceProfile: ArcProviderSourceProfile;
 };
 
+const ARC_NATIVE_USDC_TRANSFER_SIGNATURE =
+  "ArcNativeUSDCTransfer(address,address,uint256)";
+
 @Injectable()
 export class ArcProviderDecoderService {
   constructor(private readonly normalizer: ArcEventNormalizerService) {}
@@ -25,12 +28,14 @@ export class ArcProviderDecoderService {
     const circleNotification = this.readCircleEventMonitorNotification(providerPayload);
 
     if (circleNotification) {
-      const decoded = this.readDecodedTransferArgs(providerPayload, circleNotification);
+      const decoded =
+        this.readDecodedTransferArgs(providerPayload, circleNotification) ??
+        this.readNativeArcUsdcTransferArgs(circleNotification, context);
 
       if (!decoded) {
         this.throwProviderRejection(
           "missing_decoded_transfer_args",
-          "Circle event monitor payload requires decoded Transfer args before canonical ingestion.",
+          "Circle event monitor payload requires decoded Transfer args or a supported Arc native USDC log before canonical ingestion.",
           context
         );
       }
@@ -175,12 +180,18 @@ export class ArcProviderDecoderService {
 
     if (profile.eventSignature) {
       const eventSignature = this.readString(
-        this.readFirstValue(notification, [
+        this.readFirstValue(decoded, [
           "eventSignature",
           "event_signature",
           "signature",
           "eventName"
-        ])
+        ]) ??
+          this.readFirstValue(notification, [
+            "eventSignature",
+            "event_signature",
+            "signature",
+            "eventName"
+          ])
       );
 
       if (
@@ -279,6 +290,88 @@ export class ArcProviderDecoderService {
       this.asRecord(payload?.event) ??
       null
     );
+  }
+
+  private readNativeArcUsdcTransferArgs(
+    notification: Record<string, unknown>,
+    context: DecoderContext
+  ) {
+    if (!this.sourceProfileTargetsNativeArcUsdc(context.sourceProfile)) {
+      return null;
+    }
+
+    const topics = this.readStringArray(notification.topics);
+    if (!topics || topics.length < 3) {
+      return null;
+    }
+
+    const data = this.readString(notification.data);
+    const from = this.addressFromTopic(topics[1]);
+    const to = this.addressFromTopic(topics[2]);
+    const amount = this.uint256FromHex(data);
+
+    if (!from || !to || !amount) {
+      return null;
+    }
+
+    return {
+      from,
+      to,
+      amount,
+      token: context.sourceProfile.tokenSymbol ?? "USDC",
+      decimals: context.sourceProfile.tokenDecimals ?? 18,
+      chainId:
+        this.readFirstValue(notification, ["chainId", "networkId"]) ??
+        this.readArcChainIdFromBlockchain(notification),
+      eventSignature: ARC_NATIVE_USDC_TRANSFER_SIGNATURE
+    };
+  }
+
+  private sourceProfileTargetsNativeArcUsdc(profile: ArcProviderSourceProfile) {
+    return (
+      profile.contractAddress?.toLowerCase() ===
+        "0x1800000000000000000000000000000000000000" &&
+      profile.tokenSymbol === "USDC" &&
+      profile.tokenDecimals === 18
+    );
+  }
+
+  private readStringArray(value: unknown) {
+    if (!Array.isArray(value)) {
+      return null;
+    }
+
+    const entries = value.filter(
+      (entry): entry is string => typeof entry === "string" && entry.trim() !== ""
+    );
+
+    return entries.length === value.length ? entries : null;
+  }
+
+  private addressFromTopic(topic: string | undefined) {
+    if (!topic) {
+      return null;
+    }
+
+    const normalized = topic.trim().toLowerCase();
+    if (!/^0x[0-9a-f]{64}$/.test(normalized)) {
+      return null;
+    }
+
+    return `0x${normalized.slice(-40)}`;
+  }
+
+  private uint256FromHex(value: string | null) {
+    if (!value) {
+      return null;
+    }
+
+    const normalized = value.trim().toLowerCase();
+    if (!/^0x[0-9a-f]+$/.test(normalized)) {
+      return null;
+    }
+
+    return BigInt(normalized).toString(10);
   }
 
   private readArcChainIdFromBlockchain(notification: Record<string, unknown>) {
