@@ -16,90 +16,68 @@ exist.
 
 ## Confirmed current status
 
-At the time of this check, real hosted staging targets are **not yet confirmed
-or provisioned** in the repository/local workspace context.
+The initial Day 19 status check correctly found that hosted targets were not
+yet provisioned in local repo context.
 
-What is confirmed:
+That blocker is now cleared.
 
-- no real hosted Web URL is present in repo config
-- no real hosted API URL is present in repo config
-- no managed staging Postgres URL is present in repo config
-- no hosting platform config file is present in repo root
-- no local `.git` directory is present in the project folder
-- current root `.env` and `.env.example` are local-development oriented
+What is now confirmed:
+
+- hosted Web URL:
+  `https://stablebooks-web-production.up.railway.app`
+- hosted API URL:
+  `https://stablebooks-api-production.up.railway.app/api/v1`
+- managed Postgres target:
+  Railway Postgres attached to project `stablebooks-staging`
+- provider webhook target:
+  `https://stablebooks-api-production.up.railway.app/api/v1/arc/webhooks/events`
+- provider finality target:
+  `https://stablebooks-api-production.up.railway.app/api/v1/arc/webhooks/finality`
+- outbound merchant webhook mode:
+  `disabled`
 
 ## Evidence found
 
-### Local-only env posture
+### Provisioned hosted stack
 
-Current root `.env` contains only local examples such as:
+Hosted staging is now provisioned on Railway as:
 
-- `APP_BASE_URL=http://localhost:3000`
-- `API_BASE_URL=http://localhost:4000`
-- local `DATABASE_URL`
+- project: `stablebooks-staging`
+- service: `stablebooks-api`
+- service: `stablebooks-web`
+- service: `Postgres`
 
-Current `.env.example` also contains only local placeholders.
+### Deployed URLs
 
-### No hosted deployment config in repo
-
-No first-party deployment config files were found for common hosting targets:
-
-- `vercel.json`
-- `render.yaml`
-- `railway.json`
-- `fly.toml`
-
-### No real staging URLs in docs/config
-
-Day 18 docs intentionally use placeholders such as:
-
-- `https://staging-web.example.com`
-- `https://staging-api.example.com`
-
-These are planning placeholders, not confirmed live targets.
+- Web: `https://stablebooks-web-production.up.railway.app`
+- API: `https://stablebooks-api-production.up.railway.app/api/v1`
 
 ## What this means
 
-Day 19 can proceed only after real hosted targets are provisioned or provided.
+Day 19 is no longer blocked on target provisioning.
 
-This is now the main external blocker for:
-
-- Slice 3: hosted Postgres migration
-- Slice 4: hosted API deploy
-- Slice 5: hosted Web deploy
-- Slice 6+: bootstrap and smoke against hosted staging
+Hosted rehearsal execution can proceed directly against the confirmed Railway
+targets.
 
 ## Recommended first-hosted target posture
 
-For the first rehearsal, the recommended target set remains:
+For the first rehearsal, the target set is now:
 
-- Web host: `TBD`
-- API host: `TBD`
-- managed Postgres: `TBD`
+- Web host: `https://stablebooks-web-production.up.railway.app`
+- API host: `https://stablebooks-api-production.up.railway.app/api/v1`
+- managed Postgres: `Railway Postgres`
 - provider webhook target:
-  - `https://<staging-api-host>/api/v1/arc/webhooks/events`
-  - `https://<staging-api-host>/api/v1/arc/webhooks/finality`
+  - `https://stablebooks-api-production.up.railway.app/api/v1/arc/webhooks/events`
+  - `https://stablebooks-api-production.up.railway.app/api/v1/arc/webhooks/finality`
 - outbound merchant webhook mode:
-  - `disabled` for the first hosted run unless a receiver already exists
-
-## External prerequisites now needed
-
-To continue Day 19, we need actual values for:
-
-- staging Web URL
-- staging API URL
-- managed Postgres target
-- deployment secret storage
-- final decision on outbound webhook mode
+  - `disabled` for the first hosted run
 
 ## Output of this slice
 
-Slice 2 is complete because the current deployment posture has been confirmed:
-
-- hosted targets are not yet provisioned in this workspace context
-- Day 19 can continue once those targets exist
+Slice 2 remains complete, and the staging target note is now updated with the
+actual provisioned hosted targets used in the rehearsal.
 
 ## Next step
 
-Proceed to Day 19 Slice 3 only after provisioning or receiving the real hosted
-staging targets.
+Proceed with hosted rehearsal execution and hardening on the confirmed Railway
+targets.

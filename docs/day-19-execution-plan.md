@@ -4,7 +4,7 @@
 
 - Date: `2026-04-25`
 - Scope: `First hosted staging rehearsal`
-- Status: `planned`
+- Status: `completed`
 
 ## Goal
 
@@ -85,8 +85,9 @@ Confirm the real hosted staging targets:
 
 Current result:
 
-- no real hosted targets were found in the workspace/repo context
-- Day 19 execution is now blocked on external target provisioning
+- Railway staging targets were provisioned
+- hosted API and Web URLs are live
+- managed Postgres is attached
 
 ### Slice 3
 
@@ -169,14 +170,17 @@ Main Day 19 risks:
 
 - Slice 1: completed
 - Slice 2: completed
-- Stack decision: Railway whole-stack staging plan documented
-- Slice 3: next after hosted targets are provisioned
+- Slice 3: completed
+- Slice 4: completed
+- Slice 5: completed
+- Slice 6: completed
+- Slice 7: completed
+- Slice 8: completed
+- Slice 9: completed
+- Hosted staging executed on Railway
+- Bootstrap domain writes were bridged to Postgres after the first rehearsal bug
 
 ## Immediate next step
 
-Proceed to Day 19 Slice 3 only after provisioning or receiving:
-
-- hosted Web URL
-- hosted API URL
-- managed Postgres target
-- secret-storage-backed staging env values
+Proceed to Day 20: stabilize the hosted staging posture so bootstrap and smoke
+can be repeated with less manual setup and less split-brain risk.

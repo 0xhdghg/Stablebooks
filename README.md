@@ -134,12 +134,16 @@ Recent engineering checkpoints:
   first hosted staging rehearsal plan for targets, deploy, bootstrap, smoke,
   and rollout result capture.
 - [Day 19 staging targets status](/G:/bugbounty/Stablebooks/docs/day-19-staging-targets-status.md):
-  current confirmed posture for hosted staging targets, including the fact that
-  real hosted URLs and managed DB targets are not yet provisioned in this
-  workspace context.
+  confirmed Railway hosted Web/API/Postgres targets used for the first staging
+  rehearsal.
 - [Day 19 Railway provisioning plan](/G:/bugbounty/Stablebooks/docs/day-19-railway-provisioning-plan.md):
   concrete one-stack hosted staging plan using Railway for Web, API, and
   Postgres.
+- [Day 19 hosted rehearsal results](/G:/bugbounty/Stablebooks/docs/day-19-hosted-rehearsal-results.md):
+  first successful hosted staging deploy, bootstrap, API smoke, Web smoke, and
+  the split-brain bootstrap bug fixed during rehearsal.
+- [Day 19 acceptance](/G:/bugbounty/Stablebooks/docs/day-19-acceptance-note.md):
+  accepted first hosted staging rehearsal on Railway.
 - [Production env checklist](/G:/bugbounty/Stablebooks/docs/production-env-checklist.md):
   Postgres-backed runtime, Arc webhook-first config, outbound webhook config,
   smoke variables, and no-commit rules.
@@ -158,6 +162,6 @@ Recent engineering checkpoints:
 
 ## Next build steps
 
-1. Continue Day 19: first hosted staging rehearsal.
-2. Provision the chosen Railway stack: GitHub repo, Railway project, API, Web, and Postgres.
-3. Then continue Slice 3 with hosted migration, deploy, bootstrap, and smoke.
+1. Start Day 20: reduce manual staging setup and harden repeated hosted rehearsals.
+2. Automate staging bootstrap and smoke input collection.
+3. Reduce remaining JSON/auth split where it affects hosted operator lifecycle.
