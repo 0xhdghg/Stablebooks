@@ -11,6 +11,7 @@ RUN corepack pnpm install --frozen-lockfile
 
 COPY . .
 
+RUN corepack pnpm --filter @stablebooks/api db:generate
 RUN corepack pnpm --filter @stablebooks/api build
 
 ENV NODE_ENV=production
