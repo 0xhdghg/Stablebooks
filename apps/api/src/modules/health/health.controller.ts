@@ -20,9 +20,11 @@ export class HealthController {
   @Get("storage")
   async storage() {
     const readiness = await this.postgresReadiness.getStorageReadiness();
+    const healthy =
+      readiness.postgres.reachable && readiness.hostedRuntimePolicy.policyOk;
 
     return {
-      status: readiness.postgres.reachable ? "ok" : "degraded",
+      status: healthy ? "ok" : "degraded",
       service: "stablebooks-api",
       data: readiness
     };

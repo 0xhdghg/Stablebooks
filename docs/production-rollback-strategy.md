@@ -103,6 +103,8 @@ Important:
 - partial rollback can create split-brain operator confusion
 - prefer Level 1 or Level 2 first if the issue is provider/webhook specific
 - document which flag changed and why
+- in hosted environments, partial rollback may require an explicit override:
+  `STABLEBOOKS_ALLOW_HOSTED_JSON_FALLBACK=true`
 
 ### Level 4: Read fallback
 
@@ -125,6 +127,20 @@ Warning:
 
 - this can hide Postgres data created during cutover
 - do not use as a casual production rollback unless the incident requires it
+- hosted environments should treat this as an explicit emergency override, not
+  a silent fallback
+
+Hosted rollback override:
+
+```env
+STABLEBOOKS_ALLOW_HOSTED_JSON_FALLBACK=true
+```
+
+Optional hosted policy enforcement disable:
+
+```env
+STABLEBOOKS_ENFORCE_HOSTED_RUNTIME_POLICY=false
+```
 
 ## Recommended incident sequence
 

@@ -39,6 +39,19 @@ ARC_SOURCE_KIND=webhook
 JSON fallback stays available during cutover, but the smoke target should use
 Postgres-backed paths.
 
+For hosted environments, JSON fallback should not be an accidental default.
+Use it only with an explicit temporary override:
+
+```env
+STABLEBOOKS_ALLOW_HOSTED_JSON_FALLBACK=true
+```
+
+Optional enforcement control:
+
+```env
+STABLEBOOKS_ENFORCE_HOSTED_RUNTIME_POLICY=true
+```
+
 ## API runtime
 
 ### Required
@@ -74,6 +87,7 @@ Expected production-like storage posture:
 - `jsonStoreActive=false`
 - `storageMode=postgres_reads`
 - `postgresBackedRuntimeReady=true`
+- `hostedRuntimePolicy.policyOk=true`
 - `runtimeWriteModes.invoiceWriteMode=postgres`
 - `runtimeWriteModes.paymentSessionWriteMode=postgres`
 - `runtimeWriteModes.matchingWriteMode=postgres`
@@ -110,6 +124,21 @@ STABLEBOOKS_MATCHING_WRITE_MODE=postgres
 STABLEBOOKS_TERMINAL_PAYMENT_WRITE_MODE=postgres
 STABLEBOOKS_WEBHOOK_WRITE_MODE=postgres
 ```
+
+## Hosted fallback guardrails
+
+`STABLEBOOKS_ALLOW_HOSTED_JSON_FALLBACK`
+
+- Optional.
+- Default hosted posture should be unset/false.
+- Set to `true` only for explicit temporary hosted rollback.
+
+`STABLEBOOKS_ENFORCE_HOSTED_RUNTIME_POLICY`
+
+- Optional.
+- Default behavior is effectively enforced unless set to `false`.
+- When enforced, hosted startup should fail if runtime falls back to JSON mode
+  without the explicit hosted fallback override.
 
 ### Optional Arc evidence mirror
 

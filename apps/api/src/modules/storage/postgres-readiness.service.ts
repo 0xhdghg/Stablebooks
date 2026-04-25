@@ -1,4 +1,5 @@
 import { Injectable } from "@nestjs/common";
+import { HostedRuntimePolicyService } from "./hosted-runtime-policy.service";
 import { PrismaService } from "./prisma.service";
 
 type DatabaseIdentityRow = {
@@ -13,7 +14,10 @@ type MigrationSummaryRow = {
 
 @Injectable()
 export class PostgresReadinessService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly hostedRuntimePolicy: HostedRuntimePolicyService
+  ) {}
 
   async getStorageReadiness() {
     const storageMode = process.env.STABLEBOOKS_STORAGE_MODE?.trim() || "json";
@@ -27,6 +31,7 @@ export class PostgresReadinessService {
       runtimeWriteModes.matchingWriteMode === "postgres" &&
       runtimeWriteModes.terminalPaymentWriteMode === "postgres" &&
       runtimeWriteModes.webhookWriteMode === "postgres";
+    const hostedRuntimePolicy = this.hostedRuntimePolicy.getPolicy();
     const databaseUrl = process.env.DATABASE_URL?.trim() || null;
 
     if (!databaseUrl) {
@@ -35,6 +40,7 @@ export class PostgresReadinessService {
         arcEvidenceMirrorMode,
         runtimeWriteModes,
         postgresBackedRuntimeReady,
+        hostedRuntimePolicy,
         jsonStoreActive: storageMode === "json",
         postgres: {
           configured: false,
@@ -77,6 +83,7 @@ export class PostgresReadinessService {
         arcEvidenceMirrorMode,
         runtimeWriteModes,
         postgresBackedRuntimeReady,
+        hostedRuntimePolicy,
         jsonStoreActive: storageMode === "json",
         postgres: {
           configured: true,
@@ -95,6 +102,7 @@ export class PostgresReadinessService {
         arcEvidenceMirrorMode,
         runtimeWriteModes,
         postgresBackedRuntimeReady,
+        hostedRuntimePolicy,
         jsonStoreActive: storageMode === "json",
         postgres: {
           configured: true,
