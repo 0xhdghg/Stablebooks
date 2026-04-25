@@ -38,11 +38,14 @@ export class PaymentMatchingService {
     >,
     input: MatchInput = {}
   ): MatchResolution {
-    const wallet = this.findWalletForObservation(store, observation);
+    const wallets = this.findWalletsForObservation(store, observation);
+    const wallet = wallets[0] ?? null;
+    const organizationIds = wallets.map((entry) => entry.organizationId);
     const organizationId = wallet?.organizationId ?? null;
 
     const candidatePayments = this.resolveCandidatePayments(store, {
       organizationId,
+      organizationIds,
       wallet,
       paymentId: input.paymentId,
       publicToken: input.publicToken
@@ -138,17 +141,15 @@ export class PaymentMatchingService {
     return atomic * 100n === BigInt(invoiceAmountMinor) * scale;
   }
 
-  private findWalletForObservation(
+  private findWalletsForObservation(
     store: AppStore,
     observation: Pick<AppChainPaymentObservation, "chainId" | "toAddress">
   ) {
     const chain = this.chainIdToName(observation.chainId);
-    return (
-      store.wallets.find(
+    return store.wallets.filter(
         (wallet) =>
           wallet.chain.toLowerCase() === chain &&
           wallet.address.toLowerCase() === observation.toAddress.toLowerCase()
-      ) ?? null
     );
   }
 
@@ -156,6 +157,7 @@ export class PaymentMatchingService {
     store: AppStore,
     input: {
       organizationId: string | null;
+      organizationIds: string[];
       wallet: AppWallet | null;
       paymentId?: string;
       publicToken?: string;
@@ -182,12 +184,18 @@ export class PaymentMatchingService {
         .filter((entry): entry is MatchCandidate => Boolean(entry.invoice));
     }
 
-    if (!input.organizationId) {
+    const organizationIds = input.organizationIds.length
+      ? input.organizationIds
+      : input.organizationId
+        ? [input.organizationId]
+        : [];
+
+    if (!organizationIds.length) {
       return [];
     }
 
     return store.payments
-      .filter((payment) => payment.organizationId === input.organizationId)
+      .filter((payment) => organizationIds.includes(payment.organizationId))
       .filter((payment) => payment.status === "pending" || payment.status === "processing")
       .map((payment) => ({
         payment,

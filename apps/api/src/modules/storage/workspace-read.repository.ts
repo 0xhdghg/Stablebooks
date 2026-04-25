@@ -11,7 +11,8 @@ import {
   PaymentEventType,
   PaymentMatchResult,
   PaymentStatus,
-  Prisma
+  Prisma,
+  WalletStatus
 } from "@prisma/client";
 import { PrismaService } from "./prisma.service";
 import { ArcProviderDiagnostic } from "../arc/arc.types";
@@ -1754,14 +1755,21 @@ export class WorkspaceReadRepository {
       });
     }
 
-    if (!observation.wallet?.organizationId) {
+    const walletOrganizationIds = await this.resolveWalletOrganizationIds(
+      tx,
+      observation
+    );
+
+    if (!walletOrganizationIds.length) {
       return [];
     }
 
     return tx.payment.findMany({
       where: {
         ...baseWhere,
-        organizationId: observation.wallet.organizationId,
+        organizationId: {
+          in: walletOrganizationIds
+        },
         invoice: {
           status: {
             in: ["open", "processing"] as const
@@ -1771,6 +1779,36 @@ export class WorkspaceReadRepository {
       include: { invoice: true },
       orderBy: [{ createdAt: "desc" }]
     });
+  }
+
+  private async resolveWalletOrganizationIds(
+    tx: Prisma.TransactionClient,
+    observation: WorkspaceObservationWithWallet
+  ) {
+    const wallets = await tx.wallet.findMany({
+      where: {
+        chain: {
+          equals: this.chainIdToName(observation.chainId),
+          mode: "insensitive"
+        },
+        address: {
+          equals: observation.toAddress,
+          mode: "insensitive"
+        },
+        status: WalletStatus.active
+      },
+      select: {
+        organizationId: true
+      }
+    });
+
+    if (wallets.length) {
+      return [...new Set(wallets.map((wallet) => wallet.organizationId))];
+    }
+
+    return observation.wallet?.organizationId
+      ? [observation.wallet.organizationId]
+      : [];
   }
 
   private resolveMatchResult(
