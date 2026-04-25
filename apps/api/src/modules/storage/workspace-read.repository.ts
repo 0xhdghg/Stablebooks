@@ -41,6 +41,32 @@ type CreateWorkspaceInvoiceInput = {
   expectedToken?: string | null;
 };
 
+type CreateWorkspaceOrganizationInput = {
+  id: string;
+  name: string;
+  billingCountry: string;
+  baseCurrency: string;
+  onboardingStatus?: "pending_wallet" | "completed";
+};
+
+type CreateWorkspaceWalletInput = {
+  id: string;
+  organizationId: string;
+  chain: string;
+  address: string;
+  label: string;
+  role: "collection" | "operating" | "reserve" | "payout";
+  isDefaultSettlement: boolean;
+};
+
+type CreateWorkspaceCustomerInput = {
+  id: string;
+  organizationId: string;
+  name: string;
+  email: string;
+  billingCurrency: string;
+};
+
 type CreateWorkspacePaymentSessionInput = {
   publicToken: string;
   paymentId: string;
@@ -170,17 +196,102 @@ export class WorkspaceReadRepository {
     return organization ? this.serializeOrganization(organization) : null;
   }
 
+  async createOrganization(input: CreateWorkspaceOrganizationInput) {
+    const organization = await this.prisma.organization.upsert({
+      where: { id: input.id },
+      update: {
+        name: input.name,
+        billingCountry: input.billingCountry,
+        baseCurrency: input.baseCurrency,
+        onboardingStatus: input.onboardingStatus ?? "pending_wallet"
+      },
+      create: {
+        id: input.id,
+        name: input.name,
+        billingCountry: input.billingCountry,
+        baseCurrency: input.baseCurrency,
+        onboardingStatus: input.onboardingStatus ?? "pending_wallet"
+      }
+    });
+
+    return this.serializeOrganization(organization);
+  }
+
+  async updateOrganizationOnboardingStatus(
+    organizationId: string,
+    onboardingStatus: "pending_wallet" | "completed"
+  ) {
+    const organization = await this.prisma.organization.update({
+      where: { id: organizationId },
+      data: { onboardingStatus }
+    });
+
+    return this.serializeOrganization(organization);
+  }
+
   async listWallets(organizationId: string) {
     const wallets = await this.prisma.wallet.findMany({
       where: { organizationId },
       orderBy: [{ createdAt: "desc" }]
     });
 
-    return wallets.map((wallet) => ({
-      ...wallet,
-      createdAt: wallet.createdAt.toISOString(),
-      updatedAt: wallet.updatedAt.toISOString()
-    }));
+    return wallets.map((wallet) => this.serializeWallet(wallet));
+  }
+
+  async createWallet(input: CreateWorkspaceWalletInput) {
+    const organization = await this.prisma.organization.findUnique({
+      where: { id: input.organizationId },
+      select: { id: true }
+    });
+
+    if (!organization) {
+      throw new BadRequestException("Organization not found for wallet creation.");
+    }
+
+    const duplicate = await this.prisma.wallet.findFirst({
+      where: {
+        organizationId: input.organizationId,
+        chain: {
+          equals: input.chain,
+          mode: "insensitive"
+        },
+        address: {
+          equals: input.address,
+          mode: "insensitive"
+        }
+      }
+    });
+
+    if (duplicate) {
+      throw new BadRequestException("This wallet is already registered.");
+    }
+
+    const wallet = await this.prisma.$transaction(async (tx) => {
+      if (input.isDefaultSettlement) {
+        await tx.wallet.updateMany({
+          where: {
+            organizationId: input.organizationId,
+            isDefaultSettlement: true
+          },
+          data: { isDefaultSettlement: false }
+        });
+      }
+
+      return tx.wallet.create({
+        data: {
+          id: input.id,
+          organizationId: input.organizationId,
+          chain: input.chain,
+          address: input.address,
+          label: input.label,
+          role: input.role,
+          isDefaultSettlement: input.isDefaultSettlement,
+          status: "active"
+        }
+      });
+    });
+
+    return this.serializeWallet(wallet);
   }
 
   async listCustomers(organizationId: string) {
@@ -190,6 +301,44 @@ export class WorkspaceReadRepository {
     });
 
     return customers.map((customer) => this.serializeCustomer(customer));
+  }
+
+  async createCustomer(input: CreateWorkspaceCustomerInput) {
+    const organization = await this.prisma.organization.findUnique({
+      where: { id: input.organizationId },
+      select: { id: true }
+    });
+
+    if (!organization) {
+      throw new BadRequestException("Organization not found for customer creation.");
+    }
+
+    const duplicate = await this.prisma.customer.findFirst({
+      where: {
+        organizationId: input.organizationId,
+        email: {
+          equals: input.email,
+          mode: "insensitive"
+        }
+      }
+    });
+
+    if (duplicate) {
+      throw new BadRequestException("A customer with that email already exists.");
+    }
+
+    const customer = await this.prisma.customer.create({
+      data: {
+        id: input.id,
+        organizationId: input.organizationId,
+        name: input.name,
+        email: input.email,
+        billingCurrency: input.billingCurrency,
+        metadataJson: Prisma.JsonNull
+      }
+    });
+
+    return this.serializeCustomer(customer);
   }
 
   async getCustomerById(organizationId: string, customerId: string) {
@@ -1322,6 +1471,14 @@ export class WorkspaceReadRepository {
       metadata: customer.metadataJson ?? null,
       createdAt: customer.createdAt.toISOString(),
       updatedAt: customer.updatedAt.toISOString()
+    };
+  }
+
+  private serializeWallet(wallet: Prisma.WalletGetPayload<Record<string, never>>) {
+    return {
+      ...wallet,
+      createdAt: wallet.createdAt.toISOString(),
+      updatedAt: wallet.updatedAt.toISOString()
     };
   }
 

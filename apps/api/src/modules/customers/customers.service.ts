@@ -2,14 +2,22 @@ import { BadRequestException, Injectable, NotFoundException } from "@nestjs/comm
 import { randomBytes } from "node:crypto";
 import { CurrentAuth } from "../auth/current-auth";
 import { AppCustomer, StorageService } from "../storage/storage.service";
+import { WorkspaceReadRepository } from "../storage/workspace-read.repository";
 
 @Injectable()
 export class CustomersService {
-  constructor(private readonly storage: StorageService) {}
+  constructor(
+    private readonly storage: StorageService,
+    private readonly workspaceReadRepository: WorkspaceReadRepository
+  ) {}
 
   async list(auth: CurrentAuth) {
     if (!auth.organizationId) {
       return [];
+    }
+
+    if (this.shouldUsePostgresWorkspace()) {
+      return this.workspaceReadRepository.listCustomers(auth.organizationId);
     }
 
     const store = await this.storage.read();
@@ -21,6 +29,13 @@ export class CustomersService {
   async getById(auth: CurrentAuth, customerId: string) {
     if (!auth.organizationId) {
       throw new NotFoundException("Customer not found.");
+    }
+
+    if (this.shouldUsePostgresWorkspace()) {
+      return this.workspaceReadRepository.getCustomerById(
+        auth.organizationId,
+        customerId
+      );
     }
 
     const store = await this.storage.read();
@@ -83,11 +98,26 @@ export class CustomersService {
       };
 
       store.customers.push(customer);
+
+      if (this.shouldUsePostgresWorkspace()) {
+        await this.workspaceReadRepository.createCustomer({
+          id: customer.id,
+          organizationId: customer.organizationId,
+          name: customer.name,
+          email: customer.email,
+          billingCurrency: customer.billingCurrency
+        });
+      }
+
       return customer;
     });
   }
 
   private createId(prefix: string) {
     return `${prefix}_${randomBytes(8).toString("hex")}`;
+  }
+
+  private shouldUsePostgresWorkspace() {
+    return process.env.STABLEBOOKS_STORAGE_MODE?.trim() === "postgres_reads";
   }
 }

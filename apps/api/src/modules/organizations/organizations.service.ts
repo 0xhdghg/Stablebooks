@@ -6,10 +6,14 @@ import {
   AppOrganization,
   StorageService
 } from "../storage/storage.service";
+import { WorkspaceReadRepository } from "../storage/workspace-read.repository";
 
 @Injectable()
 export class OrganizationsService {
-  constructor(private readonly storage: StorageService) {}
+  constructor(
+    private readonly storage: StorageService,
+    private readonly workspaceReadRepository: WorkspaceReadRepository
+  ) {}
 
   async createForUser(
     auth: CurrentAuth,
@@ -52,6 +56,16 @@ export class OrganizationsService {
       store.organizations.push(organization);
       store.memberships.push(membership);
 
+      if (this.shouldUsePostgresWorkspace()) {
+        await this.workspaceReadRepository.createOrganization({
+          id: organization.id,
+          name: organization.name,
+          billingCountry: organization.billingCountry,
+          baseCurrency: organization.baseCurrency,
+          onboardingStatus: organization.onboardingStatus
+        });
+      }
+
       return {
         organization,
         membership
@@ -62,6 +76,10 @@ export class OrganizationsService {
   async getCurrent(auth: CurrentAuth) {
     if (!auth.organizationId) {
       return null;
+    }
+
+    if (this.shouldUsePostgresWorkspace()) {
+      return this.workspaceReadRepository.getOrganizationById(auth.organizationId);
     }
 
     const store = await this.storage.read();
@@ -81,9 +99,20 @@ export class OrganizationsService {
       organization.onboardingStatus = "completed";
       organization.updatedAt = new Date().toISOString();
     });
+
+    if (this.shouldUsePostgresWorkspace()) {
+      await this.workspaceReadRepository.updateOrganizationOnboardingStatus(
+        organizationId,
+        "completed"
+      );
+    }
   }
 
   private createId(prefix: string) {
     return `${prefix}_${randomBytes(8).toString("hex")}`;
+  }
+
+  private shouldUsePostgresWorkspace() {
+    return process.env.STABLEBOOKS_STORAGE_MODE?.trim() === "postgres_reads";
   }
 }

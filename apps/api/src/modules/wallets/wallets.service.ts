@@ -3,17 +3,23 @@ import { randomBytes } from "node:crypto";
 import { CurrentAuth } from "../auth/current-auth";
 import { OrganizationsService } from "../organizations/organizations.service";
 import { AppWallet, StorageService } from "../storage/storage.service";
+import { WorkspaceReadRepository } from "../storage/workspace-read.repository";
 
 @Injectable()
 export class WalletsService {
   constructor(
     private readonly storage: StorageService,
-    private readonly organizationsService: OrganizationsService
+    private readonly organizationsService: OrganizationsService,
+    private readonly workspaceReadRepository: WorkspaceReadRepository
   ) {}
 
   async list(auth: CurrentAuth) {
     if (!auth.organizationId) {
       return [];
+    }
+
+    if (this.shouldUsePostgresWorkspace()) {
+      return this.workspaceReadRepository.listWallets(auth.organizationId);
     }
 
     const store = await this.storage.read();
@@ -82,6 +88,18 @@ export class WalletsService {
       return wallet;
     });
 
+    if (this.shouldUsePostgresWorkspace()) {
+      await this.workspaceReadRepository.createWallet({
+        id: createdWallet.id,
+        organizationId: createdWallet.organizationId,
+        chain: createdWallet.chain,
+        address: createdWallet.address,
+        label: createdWallet.label,
+        role: createdWallet.role,
+        isDefaultSettlement: createdWallet.isDefaultSettlement
+      });
+    }
+
     if (createdWallet.isDefaultSettlement) {
       await this.organizationsService.markCompleted(organizationId);
     }
@@ -99,5 +117,9 @@ export class WalletsService {
     }
 
     return address.length >= 24;
+  }
+
+  private shouldUsePostgresWorkspace() {
+    return process.env.STABLEBOOKS_STORAGE_MODE?.trim() === "postgres_reads";
   }
 }
