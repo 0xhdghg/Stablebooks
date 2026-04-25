@@ -180,6 +180,14 @@ Recent engineering checkpoints:
   guardrails.
 - [Day 23 acceptance](/G:/bugbounty/Stablebooks/docs/day-23-acceptance-note.md):
   accepted hosted fallback guardrails.
+- [Day 24 plan](/G:/bugbounty/Stablebooks/docs/day-24-execution-plan.md):
+  operator readiness and observability uplift for the hosted MVP.
+- [Day 24 operator readiness](/G:/bugbounty/Stablebooks/docs/day-24-operator-readiness.md):
+  new runtime summary endpoint and dashboard runtime card.
+- [Day 24 hosted verification](/G:/bugbounty/Stablebooks/docs/day-24-hosted-verification.md):
+  Railway verification after the runtime visibility uplift.
+- [Day 24 acceptance](/G:/bugbounty/Stablebooks/docs/day-24-acceptance-note.md):
+  accepted operator-readiness uplift before MVP sign-off.
 - [Production env checklist](/G:/bugbounty/Stablebooks/docs/production-env-checklist.md):
   Postgres-backed runtime, Arc webhook-first config, outbound webhook config,
   smoke variables, and no-commit rules.
@@ -198,6 +206,6 @@ Recent engineering checkpoints:
 
 ## Next build steps
 
-1. Start Day 24: review remaining observability and operator-readiness gaps before MVP sign-off.
-2. Decide whether one final hardening day is needed before calling the MVP launch-ready.
-3. Keep the hosted Railway path as the canonical MVP runtime.
+1. Start Day 25: final MVP sign-off pass.
+2. Decide whether any one last hardening slice is needed or whether the hosted product is ready to call MVP.
+3. Treat Railway staging as the canonical MVP runtime baseline.
