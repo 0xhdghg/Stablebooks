@@ -231,6 +231,9 @@ Recent engineering checkpoints:
   ingestion, and rehearsal compatibility.
 - [Day 28 acceptance](/G:/bugbounty/Stablebooks/docs/day-28-acceptance-note.md):
   accepted Circle-signed webhook backend path.
+- [Day 28 hosted deployment](/G:/bugbounty/Stablebooks/docs/day-28-hosted-deployment.md):
+  Railway API deploy, Arc Testnet USDC source profile update, and hosted
+  verification result.
 - [Production env checklist](/G:/bugbounty/Stablebooks/docs/production-env-checklist.md):
   Postgres-backed runtime, Arc webhook-first config, outbound webhook config,
   smoke variables, and no-commit rules.
