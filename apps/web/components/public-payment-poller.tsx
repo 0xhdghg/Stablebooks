@@ -58,7 +58,7 @@ export function PublicPaymentPoller({ publicToken }: PublicPaymentPollerProps) {
           return;
         }
 
-        router.replace(`/pay/${publicToken}/issue`);
+        timer = setTimeout(poll, 2500);
       }
     };
 
