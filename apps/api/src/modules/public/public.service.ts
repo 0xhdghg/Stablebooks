@@ -2,6 +2,7 @@ import { Injectable, NotFoundException } from "@nestjs/common";
 import { randomBytes } from "node:crypto";
 import {
   AppInvoice,
+  AppWallet,
   AppPayment,
   StorageService
 } from "../storage/storage.service";
@@ -25,8 +26,20 @@ export class PublicService {
     const invoice = this.findPayableInvoice(store.invoices, publicToken);
     const customer = store.customers.find((entry) => entry.id === invoice.customerId) ?? null;
     const payment = this.paymentsService.getLatestPaymentForInvoice(store, invoice.id);
+    const settlementWallet =
+      store.wallets.find(
+        (entry) =>
+          entry.organizationId === invoice.organizationId &&
+          entry.isDefaultSettlement &&
+          entry.status === "active"
+      ) ?? null;
 
-    return this.serializePublicInvoice(invoice, customer?.name ?? "Customer", payment);
+    return this.serializePublicInvoice(
+      invoice,
+      customer?.name ?? "Customer",
+      payment,
+      settlementWallet
+    );
   }
 
   async getStatus(publicToken: string) {
@@ -119,7 +132,8 @@ export class PublicService {
   private serializePublicInvoice(
     invoice: AppInvoice,
     customerName: string,
-    payment: AppPayment | null
+    payment: AppPayment | null,
+    settlementWallet: AppWallet | null
   ) {
     return {
       invoiceId: invoice.id,
@@ -131,7 +145,14 @@ export class PublicService {
       dueAt: invoice.dueAt,
       memo: invoice.memo,
       status: invoice.status,
-      paymentStatus: payment?.status ?? null
+      paymentStatus: payment?.status ?? null,
+      settlementWallet: settlementWallet
+        ? {
+            chain: settlementWallet.chain,
+            address: settlementWallet.address,
+            label: settlementWallet.label
+          }
+        : null
     };
   }
 

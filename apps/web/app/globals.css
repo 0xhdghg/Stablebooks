@@ -240,6 +240,19 @@ code {
   font-size: 1.02rem;
 }
 
+.address-text {
+  display: block;
+  max-width: 100%;
+  overflow-wrap: anywhere;
+  font-family: "Courier New", monospace;
+  font-size: 0.95rem;
+}
+
+button:disabled {
+  cursor: not-allowed;
+  opacity: 0.58;
+}
+
 .badge {
   display: inline-flex;
   align-items: center;

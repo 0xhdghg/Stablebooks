@@ -547,6 +547,19 @@ export class WorkspaceReadRepository {
       throw new NotFoundException("Public invoice not found.");
     }
 
+    const settlementWallet = await this.prisma.wallet.findFirst({
+      where: {
+        organizationId: invoice.organizationId,
+        isDefaultSettlement: true,
+        status: WalletStatus.active
+      },
+      select: {
+        chain: true,
+        address: true,
+        label: true
+      }
+    });
+
     return {
       invoiceId: invoice.id,
       publicToken: invoice.publicToken,
@@ -557,7 +570,14 @@ export class WorkspaceReadRepository {
       dueAt: invoice.dueAt.toISOString(),
       memo: invoice.memo,
       status: invoice.status,
-      paymentStatus: invoice.payments[0]?.status ?? null
+      paymentStatus: invoice.payments[0]?.status ?? null,
+      settlementWallet: settlementWallet
+        ? {
+            chain: settlementWallet.chain,
+            address: settlementWallet.address,
+            label: settlementWallet.label
+          }
+        : null
     };
   }
 

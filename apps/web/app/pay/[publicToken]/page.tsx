@@ -53,6 +53,30 @@ export default async function HostedInvoicePage({
             <p>{invoice.memo}</p>
           </div>
 
+          {invoice.settlementWallet ? (
+            <div className="info-card" style={{ marginTop: "20px" }}>
+              <h2>Arc settlement route</h2>
+              <ul className="summary-list">
+                <li>
+                  <strong>Network</strong>
+                  <span>{formatChain(invoice.settlementWallet.chain)}</span>
+                </li>
+                <li>
+                  <strong>Token amount</strong>
+                  <span>{formatTokenAmount(invoice.amountMinor)} USDC</span>
+                </li>
+                <li>
+                  <strong>Recipient wallet</strong>
+                  <span className="address-text">{invoice.settlementWallet.address}</span>
+                </li>
+              </ul>
+            </div>
+          ) : (
+            <div className="alert" style={{ marginTop: "20px" }}>
+              This invoice is missing a settlement wallet. Ask the operator to finish wallet setup.
+            </div>
+          )}
+
           {isSettled ? (
             <div className="success-banner" style={{ marginTop: "20px" }}>
               Payment complete. This invoice has already reached final settlement.
@@ -60,8 +84,8 @@ export default async function HostedInvoicePage({
           ) : (
             <form action={startPaymentSessionAction} className="actions" style={{ marginTop: "20px" }}>
               <input type="hidden" name="publicToken" value={publicToken} />
-              <button className="button" type="submit">
-                Simulate stablecoin payment
+              <button className="button" type="submit" disabled={!invoice.settlementWallet}>
+                Start Arc payment
               </button>
             </form>
           )}
@@ -78,4 +102,15 @@ function formatMoney(amountMinor: number, currency: string) {
     style: "currency",
     currency
   }).format(amountMinor / 100);
+}
+
+function formatTokenAmount(amountMinor: number) {
+  return (amountMinor / 100).toLocaleString("en-US", {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 6
+  });
+}
+
+function formatChain(chain: string) {
+  return chain.toLowerCase() === "arc" ? "Arc Testnet" : chain;
 }

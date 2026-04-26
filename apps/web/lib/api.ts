@@ -101,6 +101,11 @@ export type PublicInvoiceRecord = {
   memo: string;
   status: "open" | "processing" | "paid";
   paymentStatus: "pending" | "processing" | "finalized" | "failed" | null;
+  settlementWallet: {
+    chain: string;
+    address: string;
+    label: string;
+  } | null;
 };
 
 export type PublicInvoiceStatus = {
