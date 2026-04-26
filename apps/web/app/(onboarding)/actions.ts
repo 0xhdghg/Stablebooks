@@ -25,13 +25,14 @@ export async function createOrganizationAction(formData: FormData) {
       billingCountry: String(formData.get("billingCountry") ?? ""),
       baseCurrency: String(formData.get("baseCurrency") ?? "")
     });
-    redirect("/onboarding/wallets");
   } catch (error) {
     fail(
       "/onboarding/org",
       error instanceof Error ? error.message : "Unable to create organization."
     );
   }
+
+  redirect("/onboarding/wallets");
 }
 
 export async function createWalletAction(formData: FormData) {
@@ -49,11 +50,12 @@ export async function createWalletAction(formData: FormData) {
         | "payout",
       isDefaultSettlement: String(formData.get("isDefaultSettlement") ?? "on") === "on"
     });
-    redirect("/dashboard");
   } catch (error) {
     fail(
       "/onboarding/wallets",
       error instanceof Error ? error.message : "Unable to save wallet."
     );
   }
+
+  redirect("/dashboard");
 }

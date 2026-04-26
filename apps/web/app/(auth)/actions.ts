@@ -10,6 +10,7 @@ function fail(path: string, error: string) {
 }
 
 export async function signupAction(formData: FormData) {
+  let destination = "/dashboard";
   try {
     const session = await signup({
       name: String(formData.get("name") ?? ""),
@@ -21,13 +22,16 @@ export async function signupAction(formData: FormData) {
       sameSite: "lax",
       path: "/"
     });
-    redirect(resolveDestination(session));
+    destination = resolveDestination(session);
   } catch (error) {
     fail("/signup", error instanceof Error ? error.message : "Unable to create account.");
   }
+
+  redirect(destination);
 }
 
 export async function signinAction(formData: FormData) {
+  let destination = "/dashboard";
   try {
     const session = await signin({
       email: String(formData.get("email") ?? ""),
@@ -38,10 +42,12 @@ export async function signinAction(formData: FormData) {
       sameSite: "lax",
       path: "/"
     });
-    redirect(resolveDestination(session));
+    destination = resolveDestination(session);
   } catch (error) {
     fail("/signin", error instanceof Error ? error.message : "Unable to sign in.");
   }
+
+  redirect(destination);
 }
 
 export async function signoutAction() {

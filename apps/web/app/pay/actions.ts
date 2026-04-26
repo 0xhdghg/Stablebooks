@@ -5,6 +5,7 @@ import { createPublicPaymentSession } from "../../lib/api";
 
 export async function startPaymentSessionAction(formData: FormData) {
   const publicToken = String(formData.get("publicToken") ?? "");
+  let destination = `/pay/${publicToken}/issue`;
 
   if (!publicToken) {
     redirect("/signin");
@@ -12,8 +13,10 @@ export async function startPaymentSessionAction(formData: FormData) {
 
   try {
     const session = await createPublicPaymentSession(publicToken);
-    redirect(session.redirectPath);
+    destination = session.redirectPath;
   } catch {
-    redirect(`/pay/${publicToken}/issue`);
+    destination = `/pay/${publicToken}/issue`;
   }
+
+  redirect(destination);
 }

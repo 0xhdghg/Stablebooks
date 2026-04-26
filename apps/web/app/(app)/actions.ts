@@ -37,18 +37,20 @@ export async function createCustomerAction(formData: FormData) {
       email: String(formData.get("email") ?? ""),
       billingCurrency: String(formData.get("billingCurrency") ?? "")
     });
-    redirect("/customers?success=customer-created");
   } catch (error) {
     fail(
       "/customers",
       error instanceof Error ? error.message : "Unable to create customer."
     );
   }
+
+  redirect("/customers?success=customer-created");
 }
 
 export async function createInvoiceAction(formData: FormData) {
   const token = requireToken(await getSessionToken());
 
+  let invoiceId = "";
   try {
     const invoice = await createInvoice(token, {
       customerId: String(formData.get("customerId") ?? ""),
@@ -59,13 +61,15 @@ export async function createInvoiceAction(formData: FormData) {
       internalNote: String(formData.get("internalNote") ?? ""),
       publish: String(formData.get("publish") ?? "true") === "true"
     });
-    redirect(`/invoices/${invoice.id}`);
+    invoiceId = invoice.id;
   } catch (error) {
     fail(
       "/invoices/new",
       error instanceof Error ? error.message : "Unable to create invoice."
     );
   }
+
+  redirect(`/invoices/${invoiceId}`);
 }
 
 export async function finalizePaymentAction(formData: FormData) {
@@ -77,13 +81,14 @@ export async function finalizePaymentAction(formData: FormData) {
     await finalizePayment(token, paymentId, {
       settlementReference: String(formData.get("settlementReference") ?? "")
     });
-    redirect(`/invoices/${invoiceId}?success=payment-finalized`);
   } catch (error) {
     fail(
       `/invoices/${invoiceId}`,
       error instanceof Error ? error.message : "Unable to finalize payment."
     );
   }
+
+  redirect(`/invoices/${invoiceId}?success=payment-finalized`);
 }
 
 export async function failPaymentAction(formData: FormData) {
@@ -95,13 +100,14 @@ export async function failPaymentAction(formData: FormData) {
     await failPayment(token, paymentId, {
       failureReason: String(formData.get("failureReason") ?? "")
     });
-    redirect(`/invoices/${invoiceId}?success=payment-failed`);
   } catch (error) {
     fail(
       `/invoices/${invoiceId}`,
       error instanceof Error ? error.message : "Unable to mark payment failed."
     );
   }
+
+  redirect(`/invoices/${invoiceId}?success=payment-failed`);
 }
 
 export async function retryWebhookDeliveryAction(formData: FormData) {
@@ -112,13 +118,14 @@ export async function retryWebhookDeliveryAction(formData: FormData) {
 
   try {
     await retryWebhookDelivery(token, deliveryId);
-    redirect(withQuery(redirectTo, "success", "webhook-retried"));
   } catch (error) {
     fail(
       redirectTo,
       error instanceof Error ? error.message : "Unable to retry webhook delivery."
     );
   }
+
+  redirect(withQuery(redirectTo, "success", "webhook-retried"));
 }
 
 export async function replayPaymentWebhookAction(formData: FormData) {
@@ -129,11 +136,12 @@ export async function replayPaymentWebhookAction(formData: FormData) {
 
   try {
     await replayPaymentWebhook(token, paymentId);
-    redirect(withQuery(redirectTo, "success", "webhook-replayed"));
   } catch (error) {
     fail(
       redirectTo,
       error instanceof Error ? error.message : "Unable to replay webhook event."
     );
   }
+
+  redirect(withQuery(redirectTo, "success", "webhook-replayed"));
 }
