@@ -8,6 +8,8 @@ const operatorToken = "sb_6a83a3316556e3139feb1f6833fc93e543e79e495d0ef484";
 const mockChainKey = "stablebooks-dev-chain-key";
 const txHash =
   "0xwebhookregression000000000000000000000000000000000000000000000001";
+const raceTxHash =
+  "0xwebhookrace000000000000000000000000000000000000000000000000000001";
 const notePrefix = "Webhook regression";
 
 let apiProcess = null;
@@ -26,6 +28,7 @@ async function main() {
     await waitForApi();
 
     await runRetryReplayRegression();
+    await runObservationBeforeSessionRegression();
 
     console.log("Webhook retry/replay regressions passed.");
   } finally {
@@ -38,6 +41,82 @@ async function main() {
     });
     await prisma.$disconnect();
   }
+}
+
+async function runObservationBeforeSessionRegression() {
+  const invoice = await postAuthed("/invoices", {
+    customerId: "cus_seed_acme",
+    amountMinor: 90400,
+    currency: "USD",
+    dueAt: "2026-05-15T00:00:00.000Z",
+    memo: "Webhook regression observation-before-session invoice",
+    internalNote: `${notePrefix} observation before session`,
+    publish: true
+  });
+
+  assert(invoice.data.id, "race invoice creates id");
+  assert(invoice.data.publicToken, "race invoice creates public token");
+
+  const raw = await postMock("/payments/mock/raw-chain-event", {
+    txHash: raceTxHash,
+    logIndex: 0,
+    blockNumber: 503101,
+    blockTimestamp: "2026-04-21T10:21:00.000Z",
+    confirmedAt: "2026-04-21T10:21:00.000Z",
+    from: "0x9999999999999999999999999999999999999999",
+    to: "0x1111111111111111111111111111111111111111",
+    token: "USDC",
+    amount: "904000000",
+    decimals: 6,
+    chainId: 777,
+    rawPayload: {
+      source: "webhook-regression-observation-before-session"
+    }
+  });
+
+  assert(raw.data.observation?.id, "race raw event creates observation");
+  assertEqual(
+    raw.data.payment,
+    null,
+    "race observation has no payment before session"
+  );
+  assertEqual(
+    raw.data.match?.matchResult,
+    "unmatched",
+    "race observation starts unmatched before session"
+  );
+
+  const session = await postJson(
+    `/public/invoices/${invoice.data.publicToken}/payment-session`,
+    {}
+  );
+
+  assert(session.data.paymentId, "race payment session creates payment id");
+
+  const payment = await getAuthed(`/payments/${session.data.paymentId}`);
+  assertEqual(
+    payment.data.status,
+    "finalized",
+    "race payment auto-finalized after session rematch"
+  );
+  assertEqual(
+    payment.data.matchResult,
+    "exact",
+    "race payment exact match after session rematch"
+  );
+  assertEqual(payment.data.txHash, raceTxHash, "race payment carries tx hash");
+  assertEqual(
+    payment.data.confirmationSource,
+    "arc_ingestion",
+    "race payment confirmation source"
+  );
+
+  const finalInvoice = await getAuthed(`/invoices/${invoice.data.id}`);
+  assertEqual(
+    finalInvoice.data.status,
+    "paid",
+    "race invoice paid after session rematch"
+  );
 }
 
 async function runRetryReplayRegression() {
@@ -402,10 +481,10 @@ async function cleanupPostgresScenario(prisma) {
   }
 
   await prisma.chainPaymentObservation.deleteMany({
-    where: { txHash }
+    where: { txHash: { in: [txHash, raceTxHash] } }
   });
   await prisma.rawChainEvent.deleteMany({
-    where: { txHash }
+    where: { txHash: { in: [txHash, raceTxHash] } }
   });
 }
 
