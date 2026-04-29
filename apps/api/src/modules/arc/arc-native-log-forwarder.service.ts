@@ -2,6 +2,7 @@ import { Injectable, Logger, OnModuleDestroy, OnModuleInit } from "@nestjs/commo
 import { ArcAdapterService } from "./arc-adapter.service";
 import { ArcConfigService } from "./arc-config.service";
 import { ArcRuntimeConfig } from "./arc.types";
+import { PrismaService } from "../storage/prisma.service";
 
 type RpcLog = {
   address?: string;
@@ -33,7 +34,8 @@ export class ArcNativeLogForwarderService implements OnModuleInit, OnModuleDestr
 
   constructor(
     private readonly arcConfig: ArcConfigService,
-    private readonly arcAdapter: ArcAdapterService
+    private readonly arcAdapter: ArcAdapterService,
+    private readonly prisma: PrismaService
   ) {}
 
   onModuleInit() {
@@ -79,7 +81,7 @@ export class ArcNativeLogForwarderService implements OnModuleInit, OnModuleDestr
       }
 
       if (this.nextBlock === null) {
-        this.nextBlock = config.startBlock ?? finalizedBlock + 1;
+        this.nextBlock = await this.resolveInitialNextBlock(config, finalizedBlock);
       }
 
       if (this.nextBlock > finalizedBlock) {
@@ -165,6 +167,52 @@ export class ArcNativeLogForwarderService implements OnModuleInit, OnModuleDestr
   private async getLatestBlock(config: ArcRuntimeConfig) {
     const result = await this.rpcRequest<string>(config, "eth_blockNumber", []);
     return this.hexToNumber(result, "latestBlock");
+  }
+
+  private async resolveInitialNextBlock(
+    config: ArcRuntimeConfig,
+    finalizedBlock: number
+  ) {
+    const fallback = config.startBlock ?? finalizedBlock + 1;
+
+    try {
+      const checkpoint = await this.getPersistedNextBlock(config);
+      if (checkpoint === null) {
+        return fallback;
+      }
+
+      const nextBlock = Math.max(fallback, checkpoint);
+      if (nextBlock > fallback) {
+        this.logger.log(
+          `Arc native log poller resumed from persisted checkpoint block ${nextBlock}.`
+        );
+      }
+
+      return nextBlock;
+    } catch (error) {
+      this.logger.warn(
+        `Arc native log checkpoint lookup failed: ${this.errorMessage(error)}`
+      );
+      return fallback;
+    }
+  }
+
+  private async getPersistedNextBlock(config: ArcRuntimeConfig) {
+    if (config.chainId === null) {
+      return null;
+    }
+
+    const latestEvent = await this.prisma.rawChainEvent.findFirst({
+      where: {
+        chainId: config.chainId,
+        token: config.sourceProfile.tokenSymbol ?? "USDC",
+        decimals: config.sourceProfile.tokenDecimals ?? 18
+      },
+      orderBy: [{ blockNumber: "desc" }, { logIndex: "desc" }],
+      select: { blockNumber: true }
+    });
+
+    return latestEvent ? latestEvent.blockNumber + 1 : null;
   }
 
   private async getNativeTransferLogs(
