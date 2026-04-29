@@ -1810,10 +1810,28 @@ export class WorkspaceReadRepository {
       return;
     }
 
-    await this.matchStoredObservation({
+    const matched = await this.matchStoredObservation({
       observationId: exactObservations[0].id,
       matchId: this.createId("mtc"),
       publicToken: input.publicToken
+    });
+
+    if (!matched.payment || !matched.observation.sourceConfirmedAt) {
+      return;
+    }
+
+    await this.finalizePayment({
+      observationId: matched.observation.id,
+      settlementReference: this.createArcRpcSettlementReference(
+        matched.observation.txHash,
+        matched.observation.logIndex
+      ),
+      confirmationSource: ConfirmationSource.arc_ingestion,
+      confirmationTxHash: matched.observation.txHash,
+      confirmationBlockNumber: matched.observation.blockNumber,
+      sourceConfirmedAt: matched.observation.sourceConfirmedAt,
+      confirmationNote: `Arc ingestion confirmation accepted for observation ${matched.observation.id} (sourceConfirmedAt ${matched.observation.sourceConfirmedAt}).`,
+      finalizedNote: "Payment finalized from the arc_ingestion confirmation flow."
     });
   }
 
@@ -2268,5 +2286,9 @@ export class WorkspaceReadRepository {
 
   private createSettlementReference() {
     return `settle_${randomBytes(6).toString("hex")}`;
+  }
+
+  private createArcRpcSettlementReference(txHash: string, logIndex: number) {
+    return `arc-rpc-${txHash.slice(2, 10)}-${logIndex}`;
   }
 }
