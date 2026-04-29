@@ -94,3 +94,56 @@ real tx and finalized the invoice automatically.
 
 Day 33 Slice 2 should harden the polling cursor/checkpoint behavior so normal
 testnet operation does not depend on manually bumping `ARC_START_BLOCK`.
+
+## Clean Rehearsal After Hardening
+
+After the Day 33 polling checkpoint hardening and public route guards were
+deployed, a second fresh hosted invoice completed the real Arc Testnet flow
+without manual backend match or confirm recovery.
+
+## Clean Rehearsal Invoice
+
+- Reference: `SB-9992D5`
+- Invoice id: `inv_515997428d6b1fc2`
+- Public token: `pub_269819910985f3566aa65b4f`
+- Payment id: `pay_5630eedf657868b3`
+- Payment public token: `pay_pub_1df25f1d5509b36d`
+- Amount: `$0.31`
+- Amount minor: `31`
+- Final status: `paid`
+
+## Clean Rehearsal Arc Transaction
+
+- Tx hash:
+  `0x2a73231db61a31fa59e157253bf5584e899ba1bb4a1ad8e4e9e2c8b27ba63d49`
+- Block number: `39691767`
+- Log index: `26`
+- From: `0x69a5a79242eb4ac6a4de45779090d54ecae721d0`
+- To: `0x1111111111111111111111111111111111111111`
+- Amount atomic: `310000000000000000`
+- Amount normalized: `0.31 USDC`
+- Source confirmed at: `2026-04-29T20:02:24.000Z`
+- Finalized at: `2026-04-29T20:02:39.901Z`
+
+## Clean Rehearsal Result
+
+Public invoice status after automatic ingestion:
+
+```text
+invoiceStatus -> paid
+paymentStatus -> finalized
+matchResult -> exact
+amountPaidMinor -> 31
+finalSettlement -> true
+redirectHint -> success
+```
+
+Public receipt route:
+
+```text
+https://stablebooks-web-production.up.railway.app/pay/pub_269819910985f3566aa65b4f/success
+```
+
+This run satisfies the Day 33 acceptance target for a clean real Arc Testnet
+payment finalizing through hosted polling, exact matching, and stable success
+routing without manual recovery.
