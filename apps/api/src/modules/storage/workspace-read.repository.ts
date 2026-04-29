@@ -430,7 +430,7 @@ export class WorkspaceReadRepository {
   }
 
   async createPaymentSession(input: CreateWorkspacePaymentSessionInput) {
-    return this.prisma.$transaction(async (tx) => {
+    const session = await this.prisma.$transaction(async (tx) => {
       const invoice = await tx.invoice.findUnique({
         where: { publicToken: input.publicToken },
         include: {
@@ -526,6 +526,19 @@ export class WorkspaceReadRepository {
         redirectPath: `/pay/${input.publicToken}/processing`
       };
     });
+
+    if (
+      session.paymentId &&
+      (session.status === PaymentStatus.pending ||
+        session.status === PaymentStatus.processing)
+    ) {
+      await this.rematchStoredObservationsForPaymentSession({
+        paymentId: session.paymentId,
+        publicToken: input.publicToken
+      });
+    }
+
+    return session;
   }
 
   async getPublicInvoice(publicToken: string) {
@@ -1725,6 +1738,83 @@ export class WorkspaceReadRepository {
         ? this.serializePaymentMatch(paymentMatch)
         : null
     };
+  }
+
+  private async rematchStoredObservationsForPaymentSession(input: {
+    paymentId: string;
+    publicToken: string;
+  }) {
+    const payment = await this.prisma.payment.findUnique({
+      where: { id: input.paymentId },
+      include: { invoice: true }
+    });
+
+    if (
+      !payment ||
+      (payment.status !== PaymentStatus.pending &&
+        payment.status !== PaymentStatus.processing)
+    ) {
+      return;
+    }
+
+    const settlementWallets = await this.prisma.wallet.findMany({
+      where: {
+        organizationId: payment.organizationId,
+        isDefaultSettlement: true,
+        status: WalletStatus.active
+      },
+      select: {
+        address: true
+      }
+    });
+
+    if (!settlementWallets.length) {
+      return;
+    }
+
+    const observedAfter =
+      payment.invoice.publishedAt ?? payment.invoice.createdAt;
+    const observations = await this.prisma.chainPaymentObservation.findMany({
+      where: {
+        status: ObservationStatus.detected,
+        paymentId: null,
+        invoiceId: null,
+        observedAt: {
+          gte: observedAfter
+        },
+        ...(payment.invoice.expectedChainId
+          ? { chainId: payment.invoice.expectedChainId }
+          : {}),
+        OR: settlementWallets.map((wallet) => ({
+          toAddress: {
+            equals: wallet.address,
+            mode: "insensitive" as const
+          }
+        }))
+      },
+      orderBy: [{ observedAt: "desc" }],
+      take: 10
+    });
+
+    const exactObservations = observations.filter(
+      (observation) =>
+        this.isAcceptedTokenForInvoice(payment.invoice.currency, observation.token) &&
+        this.matchesInvoiceAmount(
+          observation.amountAtomic,
+          observation.decimals,
+          payment.invoice.amountMinor
+        )
+    );
+
+    if (exactObservations.length !== 1) {
+      return;
+    }
+
+    await this.matchStoredObservation({
+      observationId: exactObservations[0].id,
+      matchId: this.createId("mtc"),
+      publicToken: input.publicToken
+    });
   }
 
   private async resolvePaymentCandidates(
