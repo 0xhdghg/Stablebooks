@@ -1,4 +1,5 @@
-import { notFound } from "next/navigation";
+import Link from "next/link";
+import { redirect } from "next/navigation";
 import { getPublicInvoice, getPublicInvoiceStatus } from "../../../../lib/api";
 import { PublicPaymentPoller } from "../../../../components/public-payment-poller";
 
@@ -8,58 +9,19 @@ export default async function PaymentProcessingPage({
   params: Promise<{ publicToken: string }>;
 }) {
   const { publicToken } = await params;
-  let invoice: Awaited<ReturnType<typeof getPublicInvoice>>;
-  let status: Awaited<ReturnType<typeof getPublicInvoiceStatus>>;
+  const invoice = await getPublicInvoice(publicToken).catch(() => null);
+  const status = await getPublicInvoiceStatus(publicToken).catch(() => null);
 
-  try {
-    [invoice, status] = await Promise.all([
-      getPublicInvoice(publicToken),
-      getPublicInvoiceStatus(publicToken)
-    ]);
-  } catch {
-    notFound();
+  if (!invoice) {
+    return <PaymentRouteIssue publicToken={publicToken} />;
   }
 
-  if (status.redirectHint === "success") {
-    return (
-      <main className="public-shell">
-        <section className="public-card">
-          <p className="brand-mark">Payment complete</p>
-          <h1 className="page-title">Invoice {invoice.referenceCode} is settled.</h1>
-          <p className="page-copy">
-            The hosted payment flow reached final state and the invoice is now marked paid.
-          </p>
+  if (status?.redirectHint === "success") {
+    redirect(`/pay/${publicToken}/success`);
+  }
 
-          <div className="success-banner" style={{ marginBottom: "20px" }}>
-            Stablebooks confirmed payment of {formatMoney(status.amountPaidMinor, invoice.currency)}.
-          </div>
-
-          <div className="public-summary">
-            <div className="summary-card">
-              <h2>Receipt</h2>
-              <ul className="summary-list">
-                <li>
-                  <strong>Reference</strong>
-                  <span>{invoice.referenceCode}</span>
-                </li>
-                <li>
-                  <strong>Customer</strong>
-                  <span>{invoice.customerName}</span>
-                </li>
-                <li>
-                  <strong>Status</strong>
-                  <span>{status.invoiceStatus}</span>
-                </li>
-              </ul>
-            </div>
-            <div className="summary-card">
-              <h2>Memo</h2>
-              <p>{invoice.memo}</p>
-            </div>
-          </div>
-        </section>
-      </main>
-    );
+  if (status?.redirectHint === "issue") {
+    redirect(`/pay/${publicToken}/issue`);
   }
 
   return (
@@ -115,17 +77,37 @@ export default async function PaymentProcessingPage({
           <ul className="summary-list">
             <li>
               <strong>Invoice</strong>
-              <span>{status.invoiceStatus}</span>
+              <span>{status?.invoiceStatus ?? invoice.status}</span>
             </li>
             <li>
               <strong>Payment</strong>
-              <span>{status.paymentStatus ?? "not started"}</span>
+              <span>{status?.paymentStatus ?? invoice.paymentStatus ?? "not started"}</span>
             </li>
             <li>
               <strong>Amount</strong>
               <span>{formatMoney(invoice.amountMinor, invoice.currency)}</span>
             </li>
           </ul>
+        </div>
+      </section>
+    </main>
+  );
+}
+
+function PaymentRouteIssue({ publicToken }: { publicToken: string }) {
+  return (
+    <main className="public-shell">
+      <section className="public-card">
+        <p className="brand-mark">Payment issue</p>
+        <h1 className="page-title">We could not load this hosted payment flow.</h1>
+        <p className="page-copy">
+          This usually means the public invoice token is invalid or the payment page is temporarily
+          unavailable.
+        </p>
+        <div className="actions" style={{ marginTop: "20px" }}>
+          <Link className="button" href={`/pay/${publicToken}`}>
+            Try again
+          </Link>
         </div>
       </section>
     </main>

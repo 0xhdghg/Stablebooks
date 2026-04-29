@@ -1,4 +1,6 @@
 import Link from "next/link";
+import { redirect } from "next/navigation";
+import { getPublicInvoiceStatus } from "../../../../lib/api";
 
 export default async function PaymentIssuePage({
   params
@@ -6,6 +8,15 @@ export default async function PaymentIssuePage({
   params: Promise<{ publicToken: string }>;
 }) {
   const { publicToken } = await params;
+  const status = await getPublicInvoiceStatus(publicToken).catch(() => null);
+
+  if (status?.redirectHint === "success") {
+    redirect(`/pay/${publicToken}/success`);
+  }
+
+  if (status?.redirectHint === "processing") {
+    redirect(`/pay/${publicToken}/processing`);
+  }
 
   return (
     <main className="public-shell">
