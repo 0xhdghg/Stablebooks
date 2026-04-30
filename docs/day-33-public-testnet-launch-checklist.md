@@ -55,7 +55,8 @@ Check these before the X.com announcement:
 
 ```text
 GET https://stablebooks-api-production.up.railway.app/api/v1/health/live
-GET https://stablebooks-api-production.up.railway.app/api/v1/health/ready
+GET https://stablebooks-api-production.up.railway.app/api/v1/health/storage
+GET https://stablebooks-api-production.up.railway.app/api/v1/health/runtime
 ```
 
 Confirm Railway shows:
