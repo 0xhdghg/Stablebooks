@@ -226,3 +226,37 @@ sign in fails only on custom domain
 public payment polling fails only on custom domain
 new Arc payment cannot finalize
 ```
+
+## Completion Evidence
+
+The custom domain cutover was completed on `2026-04-30`.
+
+Connected domains:
+
+```text
+Web -> https://stablebooks-app.xyz
+API -> https://api.stablebooks-app.xyz/api/v1
+```
+
+DNS records were configured in Namecheap:
+
+```text
+CNAME @ -> f391w2vy.up.railway.app
+TXT _railway-verify -> railway-verify=b2778e842c46977e900c39ad2a70056327d985381632d9afbb825482125d8b04
+CNAME api -> fg0j9qo6.up.railway.app
+TXT _railway-verify.api -> railway-verify=2816b50d0bbeb1d76054af5b5adb5e285c6e42bbae5324eb076e8ac31a600e62
+```
+
+Post-cutover smoke:
+
+```text
+API health/live -> 200 ok
+API health/storage -> 200 ok
+API health/runtime -> 200 ok
+Web home -> 200
+Web signin -> 200
+Public paid receipt -> 200
+Signin through custom API -> 201
+Invoice list through custom API -> 200
+CORS allow-origin -> https://stablebooks-app.xyz
+```

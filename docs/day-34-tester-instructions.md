@@ -10,7 +10,7 @@ and confirm that the operator workspace records the onchain settlement evidence.
 ## App URL
 
 ```text
-https://stablebooks-web-production.up.railway.app
+https://stablebooks-app.xyz
 ```
 
 ## Important Limits
@@ -30,7 +30,7 @@ https://stablebooks-web-production.up.railway.app
 Go to:
 
 ```text
-https://stablebooks-web-production.up.railway.app
+https://stablebooks-app.xyz
 ```
 
 Create an account or sign in with the test operator account if one was shared
@@ -97,13 +97,13 @@ Open the hosted payment page in a browser tab.
 Expected URL shape:
 
 ```text
-https://stablebooks-web-production.up.railway.app/pay/<public-token>/issue
+https://stablebooks-app.xyz/pay/<public-token>/issue
 ```
 
 or:
 
 ```text
-https://stablebooks-web-production.up.railway.app/pay/<public-token>/processing
+https://stablebooks-app.xyz/pay/<public-token>/processing
 ```
 
 ### 6. Pay With MetaMask

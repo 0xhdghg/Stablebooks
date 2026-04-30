@@ -38,7 +38,7 @@ It is a lightweight stablecoin receivables workspace:
 - watch the invoice finalize with txHash, block, and match evidence
 
 Try it:
-https://stablebooks-web-production.up.railway.app
+https://stablebooks-app.xyz
 
 This is testnet only. Please do not use mainnet funds.
 
@@ -55,7 +55,7 @@ Create an invoice, pay exact Arc Testnet USDC from MetaMask, and see the
 payment finalize with txHash + block evidence in the operator workspace.
 
 Testnet only:
-https://stablebooks-web-production.up.railway.app
+https://stablebooks-app.xyz
 
 Feedback welcome.
 ```
@@ -101,7 +101,7 @@ Important limits:
 
 ```text
 Try it here:
-https://stablebooks-web-production.up.railway.app
+https://stablebooks-app.xyz
 
 If you find a bug, send:
 invoice ref, txHash, screenshot, wallet, browser, and approximate time.
@@ -120,7 +120,7 @@ The goal is to validate the invoice -> Arc Testnet USDC payment -> finalized
 receipt loop with a few external wallets before broader sharing.
 
 Testnet only:
-https://stablebooks-web-production.up.railway.app
+https://stablebooks-app.xyz
 
 DM feedback with invoice ref + txHash.
 ```
