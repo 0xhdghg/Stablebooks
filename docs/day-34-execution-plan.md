@@ -44,6 +44,14 @@ new product architecture.
 - Include triage labels or categories for payment, wallet, UI, auth, and
   hosted runtime issues.
 
+## Slice 4.5 - Custom Domain Setup Plan
+
+- Define the Railway and DNS setup for `stablebooks-app.xyz`.
+- Map the Web app to `stablebooks-app.xyz`.
+- Map the API to `api.stablebooks-app.xyz`.
+- Capture required Web/API environment variable changes.
+- Define the post-domain smoke checks before final launch sign-off.
+
 ## Slice 5 - Launch Sign-Off
 
 - Run one final hosted smoke after documentation is complete.
@@ -57,5 +65,6 @@ new product architecture.
 - Public announcement copy is ready.
 - Tester instructions are ready.
 - Feedback intake instructions are ready.
+- Custom domain setup plan is ready.
 - Final sign-off document clearly states whether the controlled testnet
   announcement can proceed.
